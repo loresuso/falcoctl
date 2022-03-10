@@ -65,9 +65,9 @@ func New(configOptions *ConfigOptions) *cobra.Command {
 	flags.StringVarP(&configOptions.LogLevel, "loglevel", "l", configOptions.LogLevel, "Log level")
 
 	// Commands
-	rootCmd.AddCommand(NewConvertCmd(NewConvertOptions()))
 	rootCmd.AddCommand(NewDeleteCmd(nil))
 	rootCmd.AddCommand(NewInstallCmd(NewInstallOptions()))
+	rootCmd.AddCommand(NewSearchCmd(nil))
 
 	return rootCmd
 }
