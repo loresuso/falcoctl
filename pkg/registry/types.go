@@ -54,12 +54,16 @@ func (r *Registry) SearchByKeywords(keywords []string) *Plugins {
 		for _, keyword := range keywords {
 			if strings.Contains(strings.ToLower(source.Description), strings.ToLower(keyword)) {
 				plugins.Source = append(plugins.Source, source)
+			} else if strings.Contains(strings.ToLower(source.Name), strings.ToLower(keyword)) {
+				plugins.Source = append(plugins.Source, source)
 			}
 		}
 	}
 	for _, extractor := range r.Plugins.Extractor {
 		for _, keyword := range keywords {
 			if strings.Contains(strings.ToLower(extractor.Description), strings.ToLower(keyword)) {
+				plugins.Extractor = append(plugins.Extractor, extractor)
+			} else if strings.Contains(strings.ToLower(extractor.Name), strings.ToLower(keyword)) {
 				plugins.Extractor = append(plugins.Extractor, extractor)
 			}
 		}
