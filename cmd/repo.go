@@ -12,6 +12,7 @@ const (
 type RepoOptions struct {
 	*RepoAddOptions
 	*RepoRemoveOptions
+	*RepoUpdateOptions
 	RepoPath string
 	RepoFile string
 }
@@ -31,6 +32,7 @@ func NewRepoOptions() CommandOptions {
 	return &RepoOptions{
 		RepoAddOptions:    NewRepoAddOptions(),
 		RepoRemoveOptions: NewRepoRemoveOptions(),
+		RepoUpdateOptions: NewRepoUpdateOptions(),
 		RepoPath:          DefaultRepoPath,
 		RepoFile:          DefaultRepoFile,
 	}
@@ -47,6 +49,7 @@ func NewRepoCmd(options CommandOptions) *cobra.Command {
 
 	cmd.AddCommand(NewRepoAddCmd(o))
 	cmd.AddCommand(NewRepoRemoveCmd(o))
+	cmd.AddCommand(NewRepoUpdateCmd(o))
 
 	return cmd
 }

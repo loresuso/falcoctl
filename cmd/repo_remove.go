@@ -2,14 +2,15 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+
 	"github.com/falcosecurity/falcoctl/cmd/internal/validate"
 	"github.com/falcosecurity/falcoctl/pkg/repo"
 	"github.com/go-playground/validator/v10"
 	"github.com/mitchellh/go-homedir"
 	logger "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"os"
-	"path/filepath"
 )
 
 // Defaults

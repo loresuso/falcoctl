@@ -2,15 +2,16 @@ package repo
 
 import (
 	"fmt"
-	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
+
+	"gopkg.in/yaml.v2"
 )
 
 const (
-	timeformat = "2006-01-02 15:04:05"
+	Timeformat = "2006-01-02 15:04:05"
 	writeperm  = 0777
 )
 
@@ -51,7 +52,7 @@ func WriteRepos(path string, repos *RepoList) error {
 }
 
 func (r *RepoList) AddRepo(name string, url string) error {
-	tm := time.Now().Format(timeformat)
+	tm := time.Now().Format(Timeformat)
 	//Error if entry "name" already present
 	for _, k := range r.Sources {
 		if k.Name == name {

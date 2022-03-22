@@ -2,14 +2,15 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+
 	"github.com/falcosecurity/falcoctl/cmd/internal/validate"
 	"github.com/falcosecurity/falcoctl/pkg/repo"
 	"github.com/go-playground/validator/v10"
 	"github.com/mitchellh/go-homedir"
 	logger "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"os"
-	"path/filepath"
 )
 
 // Defaults
@@ -33,7 +34,7 @@ func (o *RepoAddOptions) Validate(c *cobra.Command, args []string) error {
 	return nil
 }
 
-// NewRepoAddOptions instantiates the `search registry` command options
+// NewRepoAddOptions instantiates the `repo add` command options
 func NewRepoAddOptions() *RepoAddOptions {
 	return &RepoAddOptions{}
 }
@@ -44,8 +45,8 @@ func NewRepoAddCmd(options CommandOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:                   "add",
 		DisableFlagsInUseLine: true,
-		Short:                 "Adds an artifact repository to the falcotl cache",
-		Long:                  "Search a plugin inside the official Falco registry",
+		Short:                 "Adds an artifact repository to the falcoctl cache",
+		Long:                  "Adds an artifact repository to the falcoctl cache",
 		PreRunE:               o.Validate,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) != 2 {
