@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"github.com/falcosecurity/falcoctl/pkg/index"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -76,7 +77,7 @@ func New(configOptions *ConfigOptions) *cobra.Command {
 	rootCmd.AddCommand(NewInstallCmd(NewInstallOptions()))
 	rootCmd.AddCommand(NewSearchCmd(NewSearchOptions()))
 	rootCmd.AddCommand(NewRepoCmd(NewRepoOptions()))
-
+	index.GenerateSchema()
 	return rootCmd
 }
 
