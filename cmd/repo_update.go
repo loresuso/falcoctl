@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"github.com/falcosecurity/falcoctl/pkg/index"
+	"io"
 	"net/url"
 	"os"
 	"path"
@@ -76,24 +78,42 @@ func NewRepoUpdateCmd(options CommandOptions) *cobra.Command {
 			}
 
 			for i := 0; i < len(r.Sources); i++ {
+				//TODO printing update effect? Successes/failures etc...
 				repository := &r.Sources[i]
 				u, err := url.Parse(repository.Url)
+				if err != nil {
+					logger.WithError(err).Fatal("cannot parse index url")
+					return err
+				}
 				u.Path = path.Join(u.Path, o.IndexFile)
 				parsedUrl := u.String()
-
 				resp, err := utils.DownloadFile(parsedUrl)
 				if err != nil {
 					logger.WithError(err).Fatal("Cannot download file")
+					return err
+				}
+				data, err := io.ReadAll(resp.Body)
+				if err != nil {
+					logger.WithError(err).Fatal("cannot read index file")
+					return err
+				}
+				_, err = index.ValidateIndex(data)
+				if err != nil {
+					logger.WithError(err).Fatal("cannot parse index")
+					return err
 				}
 
-				utils.SaveToFile(resp, filepath.Join(home, o.RepoPath, repository.Name+".yaml"))
-
+				wpath := filepath.Join(home, o.RepoPath, repository.Name+".yaml")
+				err = utils.SaveToFile(data, wpath)
+				if err != nil {
+					logger.WithError(err).Fatal("cannot write index file")
+				}
 				repository.Date = time.Now().Format(repo.Timeformat)
 			}
 
 			err = repo.WriteRepos(file, r)
 			if err != nil {
-				logger.Fatal(err.Error())
+				logger.WithError(err).Fatal("cannot write repository file")
 				return err
 			}
 

@@ -17,16 +17,14 @@ func DownloadFile(url string) (*http.Response, error) {
 	return resp, nil
 }
 
-// SaveToFile save the body of a http.Response to filepath.
-func SaveToFile(content *http.Response, filepath string) error {
+// SaveToFile writes data to filepath.
+func SaveToFile(data []byte, filepath string) error {
 
-	defer content.Body.Close()
 	out, err := os.Create(filepath)
 	if err != nil {
 		return err
 	}
 	defer out.Close()
-
-	_, err = io.Copy(out, content.Body)
+	_, err = io.WriteString(out, string(data))
 	return err
 }
