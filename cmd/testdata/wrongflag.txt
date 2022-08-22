@@ -7,6 +7,7 @@ Available Commands:
   help        Help about any command
   install     Install a component with falcoctl
   list        Print list of resources
+  registry    Interact with OCI registries
   repo        Manage artifact repositories
   search      Search a component with falcoctl
   version     Print the falcoctl version information
