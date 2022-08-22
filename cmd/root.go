@@ -55,6 +55,7 @@ func New() *cobra.Command {
 	rootCmd.AddCommand(NewRepoCmd(NewRepoOptions()))
 	rootCmd.AddCommand(NewListCmd(NewListOptions()))
 	rootCmd.AddCommand(version.NewVersionCmd(opt))
+	rootCmd.AddCommand(NewCompletionCmd())
 
 	return rootCmd
 }
