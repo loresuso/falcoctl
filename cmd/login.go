@@ -16,8 +16,9 @@ package cmd
 
 import (
 	"bufio"
-	"errors"
+	"context"
 	"fmt"
+	"github.com/falcosecurity/falcoctl/internal/store"
 	"os"
 
 	"github.com/moby/term"
@@ -25,7 +26,6 @@ import (
 	"github.com/spf13/pflag"
 
 	"github.com/falcosecurity/falcoctl/internal/options"
-	"github.com/falcosecurity/falcoctl/internal/store"
 	"github.com/falcosecurity/falcoctl/pkg/oci"
 	commonoptions "github.com/falcosecurity/falcoctl/pkg/options"
 	"github.com/falcosecurity/falcoctl/pkg/output"
@@ -48,7 +48,7 @@ func (o *loginOptions) Validate(args []string) error {
 
 func (o *loginOptions) AddFlags(flags *pflag.FlagSet) {
 	flags.StringVarP(&o.Username, "user", "u", "", "The login username")
-	flags.StringVarP(&o.Username, "password", "p", "", "The login password")
+	flags.StringVarP(&o.Password, "password", "p", "", "The login password")
 	flags.BoolVar(&o.PasswordFromStdin, "password-from-stdin", false, "Whether to retrieve the password from stdin or not")
 	// TODO: fill other flags later.
 }
@@ -74,7 +74,6 @@ func NewLoginCmd(opt *commonoptions.ConfigOptions) *cobra.Command {
 	}
 
 	o.AddFlags(cmd.Flags())
-
 	return cmd
 }
 
@@ -87,21 +86,27 @@ func (o *loginOptions) RunLogin(args []string) error {
 		if user, err = readLine("Username: ", false); err != nil {
 			return err
 		}
+		o.Username = user
 	}
 
 	if o.Password == "" && o.PasswordFromStdin {
 		if password, err = readLine("Password: ", true); err != nil {
 			return err
 		}
-	} else {
-		return errors.New("Password must be non empty")
+		o.Password = password
+	} else if o.Password == "" && !o.PasswordFromStdin {
+		return fmt.Errorf("error: please set password stdin")
 	}
 
-	o.Username = user
-	o.Password = password
+	remote, err := o.NewRegistry(o.Hostname, *o.ConfigOptions)
+	if err != nil {
+		return err
+	}
+	if err = remote.Ping(context.Background()); err != nil {
+		return err
+	}
 
-	// Store the validated credential
-	store, err := store.NewStore("")
+	store, err := store.NewStore([]string{}...)
 	if err != nil {
 		return err
 	}
