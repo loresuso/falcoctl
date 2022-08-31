@@ -64,7 +64,7 @@ type version struct {
 	Platform   string `json:"platform"`
 }
 
-func newVersion() version {
+func NewVersion() version {
 	// These variables usually come from -ldflags settings and in their
 	// absence fallback to the ones defined in the var section.
 	return version{
@@ -83,7 +83,7 @@ func NewVersionCmd(opt *commonoptions.ConfigOptions) *cobra.Command {
 		ConfigOptions: opt,
 	}
 
-	v := newVersion()
+	v := NewVersion()
 	cmd := &cobra.Command{
 		Use:   "version",
 		Short: "Print the falcoctl version information",

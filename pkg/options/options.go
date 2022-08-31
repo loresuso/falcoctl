@@ -34,7 +34,7 @@ type ConfigOptions struct {
 	// writer is used to write the output of the printer.
 	writer io.Writer
 	// Used to store the verbose flag, and then passed to the printer.
-	verbose bool
+	Verbose bool
 }
 
 // NewOptions returns a new ConfigOptions struct.
@@ -67,10 +67,10 @@ func (o *ConfigOptions) Initialize(cfgs ...Configs) {
 	}
 
 	// create the printer. The value of verbose is a flag value.
-	o.Printer = output.NewPrinter(o.printerScope, o.verbose, o.writer)
+	o.Printer = output.NewPrinter(o.printerScope, o.Verbose, o.writer)
 }
 
 // AddFlags registers the common flags.
 func (o *ConfigOptions) AddFlags(flags *pflag.FlagSet) {
-	flags.BoolVarP(&o.verbose, "verbose", "v", false, "Enable verbose logs (default false)")
+	flags.BoolVarP(&o.Verbose, "verbose", "v", false, "Enable verbose logs (default false)")
 }

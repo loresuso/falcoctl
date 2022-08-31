@@ -16,16 +16,11 @@ package cmd
 
 import (
 	"fmt"
-	"io"
-	"io/fs"
-	"os"
-	"path/filepath"
 	"regexp"
 
 	"github.com/spf13/cobra"
 
 	"github.com/falcosecurity/falcoctl/pkg/oci"
-	ocipusher "github.com/falcosecurity/falcoctl/pkg/oci/pusher"
 	commonoptions "github.com/falcosecurity/falcoctl/pkg/options"
 	"github.com/falcosecurity/falcoctl/pkg/output"
 )
@@ -81,34 +76,34 @@ func NewPushCmd(opt *commonoptions.ConfigOptions) *cobra.Command {
 
 // RunPush executes the business logic for the push command.
 func (o *pushOptions) RunPush(args []string) error {
-	pusher, err := ocipusher.NewPusher()
-	if err != nil {
-		o.Printer.Error.Println(err.Error())
-		return err
-	}
+	// pusher, err := ocipusher.NewPusher()
+	// if err != nil {
+	// 	o.Printer.Error.Println(err.Error())
+	// 	return err
+	// }
 
-	filename := args[0]
-	file, err := os.OpenFile(filepath.Clean(filename), 0, fs.FileMode(os.O_RDONLY))
-	if err != nil {
-		o.Printer.Error.Println(err.Error())
-		return err
-	}
+	// filename := args[0]
+	// file, err := os.OpenFile(filepath.Clean(filename), 0, fs.FileMode(os.O_RDONLY))
+	// if err != nil {
+	// 	o.Printer.Error.Println(err.Error())
+	// 	return err
+	// }
 
-	fileContent, err := io.ReadAll(file)
-	if err != nil {
-		o.Printer.Error.Println(err.Error())
-		return err
-	}
+	// fileContent, err := io.ReadAll(file)
+	// if err != nil {
+	// 	o.Printer.Error.Println(err.Error())
+	// 	return err
+	// }
 
-	// TODO: need validation!! ensure that tag is there, name of repo and so on!
-	ref := args[1]
+	// // TODO: need validation!! ensure that tag is there, name of repo and so on!
+	// ref := args[1]
 
-	res, err := pusher.Push(o.artifactType, fileContent, ref, filename, o.dependencies...)
-	if err != nil {
-		o.Printer.Error.Println(err.Error())
-		return err
-	}
+	// res, err := pusher.Push(o.artifactType, fileContent, ref, filename, o.dependencies...)
+	// if err != nil {
+	// 	o.Printer.Error.Println(err.Error())
+	// 	return err
+	// }
 
-	o.Printer.DefaultText.Printf("Artifact pushed. Digest: %s\n", res.Digest)
+	// o.Printer.DefaultText.Printf("Artifact pushed. Digest: %s\n", res.Digest)
 	return nil
 }

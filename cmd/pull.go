@@ -17,7 +17,6 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 
-	ocipuller "github.com/falcosecurity/falcoctl/pkg/oci/puller"
 	commonoptions "github.com/falcosecurity/falcoctl/pkg/options"
 	"github.com/falcosecurity/falcoctl/pkg/output"
 )
@@ -56,19 +55,19 @@ func NewPullCmd(opt *commonoptions.ConfigOptions) *cobra.Command {
 
 // RunPull executes the business logic for the pull command.
 func (o *pullOptions) RunPull(args []string) error {
-	puller, err := ocipuller.NewPuller()
-	if err != nil {
-		o.Printer.Error.Println(err.Error())
-		return err
-	}
+	// puller, err := ocipuller.NewPuller()
+	// if err != nil {
+	// 	o.Printer.Error.Println(err.Error())
+	// 	return err
+	// }
 
-	ref := args[0]
-	res, err := puller.Pull(ref)
-	if err != nil {
-		o.Printer.Error.Println(err.Error())
-		return err
-	}
+	// ref := args[0]
+	// res, err := puller.Pull(ref)
+	// if err != nil {
+	// 	o.Printer.Error.Println(err.Error())
+	// 	return err
+	// }
 
-	o.Printer.DefaultText.Printf("Artifact pulled. Digest: %s\n", res.Digest)
+	// o.Printer.DefaultText.Printf("Artifact pulled. Digest: %s\n", res.Digest)
 	return nil
 }

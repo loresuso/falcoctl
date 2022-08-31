@@ -16,31 +16,41 @@ package cmd
 
 import (
 	"bufio"
+	"errors"
+	"fmt"
 	"os"
-	"strings"
-	"syscall"
 
+	"github.com/moby/term"
 	"github.com/spf13/cobra"
-	"golang.org/x/term"
+	"github.com/spf13/pflag"
 
+	"github.com/falcosecurity/falcoctl/internal/options"
+	"github.com/falcosecurity/falcoctl/internal/store"
 	"github.com/falcosecurity/falcoctl/pkg/oci"
-	"github.com/falcosecurity/falcoctl/pkg/oci/authn"
 	commonoptions "github.com/falcosecurity/falcoctl/pkg/options"
 	"github.com/falcosecurity/falcoctl/pkg/output"
 )
 
 type loginOptions struct {
 	*commonoptions.ConfigOptions
-	hostname string
+	options.Remote
+	Hostname string
 }
 
 func (o *loginOptions) Validate(args []string) error {
 	if len(args) != 0 {
-		o.hostname = args[0]
+		o.Hostname = args[0]
 	} else {
-		o.hostname = oci.DefaultRegistry
+		o.Hostname = oci.DefaultRegistry
 	}
 	return nil
+}
+
+func (o *loginOptions) AddFlags(flags *pflag.FlagSet) {
+	flags.StringVarP(&o.Username, "user", "u", "", "The login username")
+	flags.StringVarP(&o.Username, "password", "p", "", "The login password")
+	flags.BoolVar(&o.PasswordFromStdin, "password-from-stdin", false, "Whether to retrieve the password from stdin or not")
+	// TODO: fill other flags later.
 }
 
 // NewLoginCmd returns the login command.
@@ -63,26 +73,39 @@ func NewLoginCmd(opt *commonoptions.ConfigOptions) *cobra.Command {
 		},
 	}
 
+	o.AddFlags(cmd.Flags())
+
 	return cmd
 }
 
 // RunLogin executes the business logic for the login command.
 func (o *loginOptions) RunLogin(args []string) error {
-	user, token, err := getCredentials(o.Printer)
-	if err != nil {
-		o.Printer.Error.Println(err.Error())
-		return err
+
+	var user, password string
+	var err error
+	if o.Username == "" {
+		if user, err = readLine("Username: ", false); err != nil {
+			return err
+		}
 	}
 
-	client, err := authn.NewClient()
-	if err != nil {
-		o.Printer.Error.Println(err.Error())
-		return err
+	if o.Password == "" && o.PasswordFromStdin {
+		if password, err = readLine("Password: ", true); err != nil {
+			return err
+		}
+	} else {
+		return errors.New("Password must be non empty")
 	}
 
-	err = client.Login(o.hostname, user, token)
+	o.Username = user
+	o.Password = password
+
+	// Store the validated credential
+	store, err := store.NewStore("")
 	if err != nil {
-		o.Printer.Error.Println(err.Error())
+		return err
+	}
+	if err := store.Store(o.Hostname, o.Credential()); err != nil {
 		return err
 	}
 
@@ -90,23 +113,26 @@ func (o *loginOptions) RunLogin(args []string) error {
 	return nil
 }
 
-func getCredentials(p *output.Printer) (username, password string, err error) {
+func readLine(prompt string, slient bool) (string, error) {
+	fmt.Print(prompt)
+	if slient {
+		fd := os.Stdin.Fd()
+		state, err := term.SaveState(fd)
+		if err != nil {
+			return "", err
+		}
+		term.DisableEcho(fd, state)
+		defer term.RestoreTerminal(fd, state)
+	}
+
 	reader := bufio.NewReader(os.Stdin)
-
-	p.DefaultText.Print("Username: ")
-	username, err = reader.ReadString('\n')
+	line, _, err := reader.ReadLine()
 	if err != nil {
-		return "", "", err
+		return "", err
+	}
+	if slient {
+		fmt.Println()
 	}
 
-	p.DefaultText.Print("Password: ")
-	bytePassword, err := term.ReadPassword(syscall.Stdin)
-	if err != nil {
-		return "", "", err
-	}
-
-	p.DefaultText.Println()
-
-	password = string(bytePassword)
-	return strings.TrimSpace(username), strings.TrimSpace(password), nil
+	return string(line), nil
 }

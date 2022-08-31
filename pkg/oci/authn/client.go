@@ -14,68 +14,38 @@
 
 package authn
 
-import (
-	"context"
-	"net/http"
-
-	"github.com/containerd/containerd/remotes"
-	"oras.land/oras-go/pkg/auth"
-	"oras.land/oras-go/pkg/auth/docker"
-)
-
 const (
 	falcoctlUserAgent = "falcoctl"
 )
 
 // Client is used to interact with a remote registry.
 type Client struct {
-	Context    context.Context
-	Authorizer auth.Client
-	Resolver   remotes.Resolver
 }
 
 // NewClient creates a new Client for remote registry.
 func NewClient() (*Client, error) {
-	c := &Client{}
-
-	c.Context = context.Background()
-
-	// Authentication credentials will be stored in $HOME/.docker/config.json
-	authClient, err := docker.NewClientWithDockerFallback()
-	if err != nil {
-		return nil, err
-	}
-	c.Authorizer = authClient
-
-	headers := http.Header{}
-	headers.Set("User-Agent", falcoctlUserAgent)
-	opts := []auth.ResolverOption{auth.WithResolverHeaders(headers)}
-	resolver, err := c.Authorizer.ResolverWithOpts(opts...)
-	if err != nil {
-		return nil, err
-	}
-	c.Resolver = resolver
-
-	return c, nil
+	return nil, nil
 }
 
 // Login to remote registry.
 // For now, only support login with token.
 func (c *Client) Login(hostname, user, token string) error {
-	loginOptions := []auth.LoginOption{
-		auth.WithLoginContext(c.Context),
-		auth.WithLoginHostname(hostname),
-		auth.WithLoginUsername(user),
-		auth.WithLoginSecret(token),
-	}
-	err := c.Authorizer.LoginWithOpts(
-		loginOptions...,
-	)
+	// loginOptions := []auth.LoginOption{
+	// 	auth.WithLoginContext(c.Context),
+	// 	auth.WithLoginHostname(hostname),
+	// 	auth.WithLoginUsername(user),
+	// 	auth.WithLoginSecret(token),
+	// }
+	// err := c.Authorizer.LoginWithOpts(
+	// 	loginOptions...,
+	// )
 
-	return err
+	// return err
+	return nil
 }
 
 // Logout from remote registry.
 func (c *Client) Logout(hostname string) error {
-	return c.Authorizer.Logout(c.Context, hostname)
+	// return c.Authorizer.Logout(c.Context, hostname)
+	return nil
 }
