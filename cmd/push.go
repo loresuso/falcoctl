@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"runtime"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -31,6 +32,7 @@ import (
 type pushOptions struct {
 	*commonoptions.CommonOptions
 	artifactType oci.ArtifactType
+	platform     string
 	dependencies []string
 }
 
@@ -43,11 +45,16 @@ func (o *pushOptions) Validate() error {
 		}
 	}
 
+	//TODO(loresuso,alacuku): valid only for plugins artifacts, add check for supported platforms.
+	if o.platform != "" && !strings.Contains(o.platform, ":") {
+		return fmt.Errorf("wrong platform format: it needs to be in OS:ARCH")
+	}
+
 	return nil
 }
 
 // NewPushCmd returns the push command.
-func NewPushCmd(opt *commonoptions.CommonOptions) *cobra.Command {
+func NewPushCmd(ctx context.Context, opt *commonoptions.CommonOptions) *cobra.Command {
 	o := pushOptions{
 		CommonOptions: opt,
 	}
@@ -62,11 +69,13 @@ func NewPushCmd(opt *commonoptions.CommonOptions) *cobra.Command {
 			o.Printer.CheckErr(o.Validate())
 		},
 		Run: func(cmd *cobra.Command, args []string) {
-			o.Printer.CheckErr(o.RunPush(args))
+			o.Printer.CheckErr(o.RunPush(ctx, args))
 		},
 	}
 
 	cmd.Flags().VarP(&o.artifactType, "type", "t", `type of artifact to be pushed. Allowed values: "rule", "plugin"`)
+	cmd.Flags().StringVar(&o.platform, "platform", fmt.Sprintf("%s:%s", runtime.GOOS, runtime.GOARCH),
+		"os and architecture of the artifact in OS:ARCH format(only for plugins artifacts)")
 	err := cmd.MarkFlagRequired("type")
 	if err != nil {
 		o.Printer.Error.Println("cannot mark type flag as required")
@@ -78,13 +87,13 @@ func NewPushCmd(opt *commonoptions.CommonOptions) *cobra.Command {
 }
 
 // RunPush executes the business logic for the push command.
-func (o *pushOptions) RunPush(args []string) error {
-	ctx := context.TODO()
+func (o *pushOptions) RunPush(ctx context.Context, args []string) error {
 	path := args[0]
 	ref := args[1]
 	index := strings.Index(ref, "/")
 	if index <= 0 {
-		return fmt.Errorf("cannot extract registry name")
+		o.Printer.Error.Printf("unable to extract registry name from %s", ref)
+		return fmt.Errorf("cannot extract registry name from %s", ref)
 	}
 
 	registry := ref[0:index]
@@ -105,7 +114,7 @@ func (o *pushOptions) RunPush(args []string) error {
 		return err
 	}
 
-	res, err := pusher.Push(ctx, o.artifactType, path, ref, o.dependencies...)
+	res, err := pusher.Push(ctx, o.artifactType, path, ref, o.platform, o.dependencies...)
 	if err != nil {
 		o.Printer.Error.Println(err.Error())
 		return err

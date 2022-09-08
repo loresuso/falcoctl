@@ -32,7 +32,7 @@ const (
 )
 
 // New instantiates the root command.
-func New() *cobra.Command {
+func New(ctx context.Context) *cobra.Command {
 	opt := options.NewOptions()
 
 	rootCmd := &cobra.Command{
@@ -53,7 +53,7 @@ func New() *cobra.Command {
 	rootCmd.AddCommand(NewInstallCmd())
 	rootCmd.AddCommand(NewSearchCmd(NewSearchOptions()))
 	rootCmd.AddCommand(version.NewVersionCmd(opt))
-	rootCmd.AddCommand(NewRegistryCmd(opt))
+	rootCmd.AddCommand(NewRegistryCmd(ctx, opt))
 
 	return rootCmd
 }
@@ -70,5 +70,5 @@ func Execute() {
 
 	// we do not log the error here since we expect that each subcommand
 	// handles the errors by itself.
-	output.ExitOnErr(New().ExecuteContext(ctx))
+	output.ExitOnErr(New(ctx).Execute())
 }
