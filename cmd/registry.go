@@ -16,6 +16,7 @@ package cmd
 
 import (
 	"context"
+
 	"github.com/spf13/cobra"
 
 	commonoptions "github.com/falcosecurity/falcoctl/pkg/options"

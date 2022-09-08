@@ -17,10 +17,12 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"runtime"
 	"strings"
 
 	"github.com/spf13/cobra"
 
+	"github.com/falcosecurity/falcoctl/pkg/oci"
 	"github.com/falcosecurity/falcoctl/pkg/oci/authn"
 	ocipuller "github.com/falcosecurity/falcoctl/pkg/oci/puller"
 	commonoptions "github.com/falcosecurity/falcoctl/pkg/options"
@@ -28,10 +30,15 @@ import (
 
 type pullOptions struct {
 	*commonoptions.CommonOptions
+	artifactType oci.ArtifactType
+	platform     string
 }
 
 func (o *pullOptions) Validate() error {
-	// TODO.
+	//TODO(loresuso,alacuku): valid only for plugins artifacts, add check for supported platforms.
+	if o.platform != "" && !strings.Contains(o.platform, "/") {
+		return fmt.Errorf("wrong platform format: it needs to be in OS/ARCH")
+	}
 	return nil
 }
 
@@ -54,6 +61,13 @@ func NewPullCmd(opt *commonoptions.CommonOptions) *cobra.Command {
 			o.Printer.CheckErr(o.RunPull(args))
 		},
 	}
+	cmd.Flags().VarP(&o.artifactType, "type", "t", `type of artifact to be pushed. Allowed values: "rule", "plugin"`)
+	err := cmd.MarkFlagRequired("type")
+	if err != nil {
+		o.Printer.Error.Println("cannot mark type flag as required")
+	}
+	cmd.Flags().StringVar(&o.platform, "platform", fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH),
+		"os and architecture of the artifact in OS/ARCH format(only for plugins artifacts)")
 
 	return cmd
 }
@@ -81,7 +95,7 @@ func (o *pullOptions) RunPull(args []string) error {
 
 	puller := ocipuller.NewPuller(client)
 
-	res, err := puller.Pull(ctx, ref, "")
+	res, err := puller.Pull(ctx, o.artifactType, ref, "", o.platform)
 	if err != nil {
 		o.Printer.Error.Println(err.Error())
 		return err

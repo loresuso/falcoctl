@@ -46,8 +46,8 @@ func (o *pushOptions) Validate() error {
 	}
 
 	//TODO(loresuso,alacuku): valid only for plugins artifacts, add check for supported platforms.
-	if o.platform != "" && !strings.Contains(o.platform, ":") {
-		return fmt.Errorf("wrong platform format: it needs to be in OS:ARCH")
+	if o.platform != "" && !strings.Contains(o.platform, "/") {
+		return fmt.Errorf("wrong platform format: it needs to be in OS/ARCH")
 	}
 
 	return nil
@@ -74,8 +74,8 @@ func NewPushCmd(ctx context.Context, opt *commonoptions.CommonOptions) *cobra.Co
 	}
 
 	cmd.Flags().VarP(&o.artifactType, "type", "t", `type of artifact to be pushed. Allowed values: "rule", "plugin"`)
-	cmd.Flags().StringVar(&o.platform, "platform", fmt.Sprintf("%s:%s", runtime.GOOS, runtime.GOARCH),
-		"os and architecture of the artifact in OS:ARCH format(only for plugins artifacts)")
+	cmd.Flags().StringVar(&o.platform, "platform", fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH),
+		"os and architecture of the artifact in OS/ARCH format(only for plugins artifacts)")
 	err := cmd.MarkFlagRequired("type")
 	if err != nil {
 		o.Printer.Error.Println("cannot mark type flag as required")

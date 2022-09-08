@@ -19,13 +19,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/opencontainers/image-spec/specs-go"
 	"io"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
 
+	"github.com/opencontainers/image-spec/specs-go"
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 	logger "github.com/sirupsen/logrus"
 	"oras.land/oras-go/v2"
@@ -142,55 +142,19 @@ func (p *Pusher) retrieveIndex(ctx context.Context, repo *remote.Repository) (*v
 	return &index, nil
 }
 
-func (p *Pusher) updateIndex(ctx context.Context, indexDesc v1.Index, manifestDesc v1.Descriptor, repo *remote.Repository) (*v1.Index, error) {
-	memoryStore := memory.New()
-	ref := repo.Reference
-
+func (p *Pusher) updateIndex(ctx context.Context, indexDesc v1.Index, manifestDesc v1.Descriptor) (*v1.Index, error) {
 	// Check if the index already contains the manifest for the given platform.
 	for i, m := range indexDesc.Manifests {
 		// If we find a manifest in the index that has the same platform as the artifact that we are currently
 		// processing it means that we are going to overwrite it with the current version. Only if the digests are
 		// different.
-		if reflect.DeepEqual(m.Platform, manifestDesc.Platform) &&
-			m.Digest.String() != manifestDesc.Digest.String() {
-			ref.Reference = m.Digest.String()
-			remoteManifestDesc, err := oras.Copy(ctx, repo, m.Digest.String(), memoryStore, "", oras.DefaultCopyOptions)
-			if err != nil {
-				if !strings.Contains(err.Error(), fmt.Sprintf("%s: not found", repo.Reference.Reference)) {
-					return nil, fmt.Errorf("unable to download blob for ref %s: %w", ref, err)
-				}
-			}
-
-			var manifest v1.Manifest
-			reader, err := memoryStore.Fetch(ctx, remoteManifestDesc)
-			if err != nil {
-				return nil, fmt.Errorf("unable to fetch remote manifest desck from memory store for ref %q: %w", ref, err)
-			}
-			var manifestBytes = []byte{}
-
-			if manifestBytes, err = io.ReadAll(reader); err != nil {
-				return nil, fmt.Errorf("unable to read manifest from reader for ref %q: %w", ref, err)
-			}
-
-			if err = json.Unmarshal(manifestBytes, &manifest); err != nil {
-				return nil, fmt.Errorf("unable to unmarshal manifest for ref %q: %w", ref, err)
-			}
-
-			// Here we delete the existing artifact in the remote repository.
-			// TODO(alacuku, loresuso): check if the error is not found and in that case do not error(maybe a warning).
-			// TODO(alacuku, loresuso): should we delete the artifact or just leave it there and update the manifest to point to the new version
-			if err := repo.Delete(ctx, manifest.Layers[0]); err != nil {
-				return nil, fmt.Errorf("unable to delete artifact with digest %q and ref %q from remote repo: %w", manifest.Layers[0].Digest.String(), ref, err)
-			}
-
-			if err := repo.Delete(ctx, manifest.Config); err != nil {
-				return nil, fmt.Errorf("unable to delete artifact with digest %q and ref %q from remote repo: %w", manifest.Config.Digest.String(), ref, err)
-			}
-			// Remove manifest of the deleted artifact from the manifest.
+		if reflect.DeepEqual(m.Platform, manifestDesc.Platform) {
+			// Remove manifest from the index.
 			indexDesc.Manifests = append(indexDesc.Manifests[:i], indexDesc.Manifests[i+1:]...)
 			break
 		}
 	}
+
 	indexDesc.Manifests = append(indexDesc.Manifests, manifestDesc)
 	return &indexDesc, nil
 }
@@ -269,7 +233,7 @@ func (p *Pusher) packManifest(ctx context.Context, configDesc, dataDesc *v1.Desc
 	}
 
 	if dataDesc.MediaType == oci.FalcoPluginLayerMediaType {
-		tokens := strings.Split(platform, ":")
+		tokens := strings.Split(platform, "/")
 		desc.Platform = &v1.Platform{
 			OS:           tokens[0],
 			Architecture: tokens[1],
@@ -300,7 +264,7 @@ func (p *Pusher) packIndex(ctx context.Context, artifactType oci.ArtifactType, m
 		}
 
 		// todo: check the parameters passed to updateIndex. reference or copy?
-		if index, err = p.updateIndex(ctx, *index, manifestDesc, repo); err != nil {
+		if index, err = p.updateIndex(ctx, *index, manifestDesc); err != nil {
 			return nil, err
 		}
 		newIndexDesc, err := p.toFileStore(ctx, v1.MediaTypeImageIndex, "index", index)
