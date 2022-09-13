@@ -1,44 +1,59 @@
-api_version: 0.1.0
-parent: index.yaml.2
-entries:
- - name: cloudtrail
-   pluginversion: 0.2.5
-   apiversion: 0.3.0 #responsabilità di chi pubblica gli artifact di matchare api version corretta
-   description: Cloutrail plugin
-   authors: The Falco Authors
-   created: 2022-02-22T15:21:05.000Z
-   digest:
-   contact: https://falco.org/community
-   license: Apache-2.0
-   artifact: https://download.falco.org/plugins/stable/cloudtrail-0.2.5-linux-x86_64.tar.gz
-   keywords:
-    - aws
-    - cloudtrail
-    - log
-   dependencies:
-    - name: cloudtrail_rules
-      version:
-      repository:
-      type: ruleset
- - name: test
-   pluginversion: 0.1.0
-   apiversion: 0.3.0
-   description: test entry
-   authors: The Falco Authors
-   created: 2022-04-16T00:00:00.000Z
-   digest:
-   contact: https://falco.org/community
-   license: Apache-2.0
-   artifact: https://download.falco.org/plugins/stable/dummy_c-0.2.1-linux-x86_64.tar.gz
-   keywords:
-    - dummy
-    - test
-   dependencies:
-    - name: test_rules
-      version:
-      repository:
-      type: ruleset
-    - name: cloudtrail
-      version: 0.2.5
-      repository: https://loresuso.github.io/falcoctl
-      type: plugin
+- name: k8saudit #*
+  registry: ghcr.io #* TBD: global or here?
+  repository: falcosecurity/k8saudit #*
+  type: plugin #* plugin|rulesfile (e.g. `application/vnd.cncf.falco.THIS.layer.v1+tar.gz`)
+  description: Read Kubernetes Audit Events and monitor Kubernetes Clusters from EKS #* mandatory because of the "search"
+  license: Apache-2.0 # License IDs refer to the SPDX License List at https://spdx.org/licenses
+  keywords: #* mandatory because of the "search"
+    - monitoring
+    - security
+    - alerting
+    - metric
+    - troubleshooting
+    - run-time
+  home: https://falco.org
+  sources:
+    - https://github.com/falcosecurity/falco
+  maintainers:
+    - name: The Falco Authors
+      email: cncf-falco-dev@lists.cncf.io
+
+- name: prova #*
+  registry: ghcr.io #* TBD: global or here?
+  repository: falcosecurity/k8saudit #*
+  type: plugin #* plugin|rulesfile (e.g. `application/vnd.cncf.falco.THIS.layer.v1+tar.gz`)
+  description: Read Kubernetes Audit Events and monitor Kubernetes Clusters from EKS #* mandatory because of the "search"
+  license: Apache-2.0 # License IDs refer to the SPDX License List at https://spdx.org/licenses
+  keywords: #* mandatory because of the "search"
+    - monitoring
+    - security
+    - alerting
+    - metric
+    - troubleshooting
+    - run-time
+  home: https://falco.org
+  sources:
+    - https://github.com/falcosecurity/falco
+  maintainers:
+    - name: The Falco Authors
+      email: cncf-falco-dev@lists.cncf.io
+
+- name: hey #*
+  registry: ghcr.io #* TBD: global or here?
+  repository: falcosecurity/k8saudit #*
+  type: plugin #* plugin|rulesfile (e.g. `application/vnd.cncf.falco.THIS.layer.v1+tar.gz`)
+  description: Read Kubernetes Audit Events and monitor Kubernetes Clusters from EKS #* mandatory because of the "search"
+  license: Apache-2.0 # License IDs refer to the SPDX License List at https://spdx.org/licenses
+  keywords: #* mandatory because of the "search"
+    - monitoring
+    - security
+    - alerting
+    - metric
+    - troubleshooting
+    - run-time
+  home: https://falco.org
+  sources:
+    - https://github.com/falcosecurity/falco
+  maintainers:
+    - name: The Falco Authors
+      email: cncf-falco-dev@lists.cncf.io 
