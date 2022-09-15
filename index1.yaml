@@ -1,0 +1,61 @@
+- name: k8saudit 
+  registry: ghcr.io 
+  repository: falcosecurity/k8saudit
+  type: plugin
+  description: Read Kubernetes Audit Events and monitor Kubernetes Clusters from EKS
+  license: Apache-2.0
+  keywords:
+    - monitoring
+    - security
+    - alerting
+    - metric
+    - troubleshooting
+    - run-time
+  home: https://falco.org
+  sources:
+    - https://github.com/falcosecurity/falco
+  maintainers:
+    - name: The Falco Authors
+      email: cncf-falco-dev@lists.cncf.io
+
+- name: lore 
+  registry: ghcr.io 
+  repository: falcosecurity/k8saudit
+  type: plugin
+  description: Read Kubernetes Audit Events and monitor Kubernetes Clusters from EKS
+  license: Apache-2.0
+  keywords:
+    - monitoring
+    - security
+    - alerting
+    - metric
+    - troubleshooting
+    - run-time
+    - lore
+  home: https://falco.org
+  sources:
+    - https://github.com/falcosecurity/falco
+  maintainers:
+    - name: The Falco Authors
+      email: cncf-falco-dev@lists.cncf.io
+
+- name: aldo 
+  registry: ghcr.io 
+  repository: falcosecurity/k8saudit
+  type: plugin
+  description: Read Kubernetes Audit Events and monitor Kubernetes Clusters from EKS
+  license: Apache-2.0
+  keywords:
+    - monitoring
+    - security
+    - alerting
+    - metric
+    - troubleshooting
+    - run-time
+    - aldo
+  home: https://falco.org
+  sources:
+    - https://github.com/falcosecurity/falco
+  maintainers:
+    - name: The Falco Authors
+      email: cncf-falco-dev@lists.cncf.io

@@ -11,6 +11,7 @@
     - metric
     - troubleshooting
     - run-time
+    - added-keyword
   home: https://falco.org
   sources:
     - https://github.com/falcosecurity/falco
