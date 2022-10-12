@@ -1,4 +1,4 @@
-module github.com/falcosecurity/falcoctl
+module github.com/LucaGuerra/falcoctl
 
 go 1.19
 
