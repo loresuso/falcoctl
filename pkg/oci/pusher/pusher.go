@@ -242,6 +242,8 @@ func (p *Pusher) storeArtifactsIndex(ctx context.Context, fileStore *file.Store,
 		MediaType: v1.MediaTypeImageIndex,
 	}
 
+	index.Annotations[v1.AnnotationSource] = "https://github.com/LucaGuerra/plugins"
+
 	// copy manifests
 	for _, manifestDesc := range manifestDescs {
 		index.Manifests = append(index.Manifests, *manifestDesc)
@@ -281,7 +283,10 @@ func (p *Pusher) toFileStore(ctx context.Context, fileStore *file.Store, mediaTy
 func (p *Pusher) packManifest(ctx context.Context, fileStore *file.Store,
 	configDesc, dataDesc *v1.Descriptor, platform string) (*v1.Descriptor, error) {
 	// Now we can create manifest, using the Config descriptor and principal Layer descriptor.
-	packOptions := oras.PackOptions{ConfigDescriptor: configDesc}
+	annotations := make(map[string]string)
+	annotations[v1.AnnotationSource] = "https://github.com/LucaGuerra/plugins"
+
+	packOptions := oras.PackOptions{ConfigDescriptor: configDesc, ManifestAnnotations: annotations}
 	desc, err := oras.Pack(ctx, fileStore, []v1.Descriptor{*dataDesc}, packOptions)
 	if err != nil {
 		return nil, fmt.Errorf("unable to generate manifest for config layer %s and data layer %s: %w", configDesc.MediaType, dataDesc.MediaType, err)
