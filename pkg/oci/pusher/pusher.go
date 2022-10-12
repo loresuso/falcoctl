@@ -242,6 +242,7 @@ func (p *Pusher) storeArtifactsIndex(ctx context.Context, fileStore *file.Store,
 		MediaType: v1.MediaTypeImageIndex,
 	}
 
+	index.Annotations = make(map[string]string)
 	index.Annotations[v1.AnnotationSource] = "https://github.com/LucaGuerra/plugins"
 
 	// copy manifests
