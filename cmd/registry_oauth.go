@@ -22,6 +22,8 @@ import (
 
 	"github.com/falcosecurity/falcoctl/pkg/options"
 	"github.com/spf13/cobra"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/github"
 )
 
 type oauthOptions struct {
@@ -30,6 +32,7 @@ type oauthOptions struct {
 	tokenURL     string
 	clientId     string
 	clientSecret string
+	scopes       []string
 	interactive  bool
 }
 
@@ -69,12 +72,33 @@ func NewOauthCmd(ctx context.Context, opt *options.CommonOptions) *cobra.Command
 		o.Printer.Error.Println("unable to mark flag \"client-secret\" as required")
 		return nil
 	}
+	cmd.Flags().StringSliceVar(&o.scopes, "scopes", nil, "comma separeted list of scopes for which requesting access")
+	if err := cmd.MarkFlagRequired("scopes"); err != nil {
+		o.Printer.Error.Println("unable to mark flag \"scopes\" as required")
+		return nil
+	}
 	cmd.Flags().BoolVarP(&o.interactive, "interactive", "i", false, "interactively open web browser to login")
 
 	return cmd
 }
 
 func (o *oauthOptions) RunOauth(context.Context) error {
+	conf := &oauth2.Config{
+		ClientID:     o.clientId,
+		ClientSecret: o.clientSecret,
+		Scopes:       o.scopes,
+		Endpoint:     github.Endpoint,
+		RedirectURL:  "", // make this constant, choose a "default" port
+	}
+
+	// Redirect user to consent page to ask for permission
+	// for the scopes specified above.
+	url := conf.AuthCodeURL("", oauth2.AccessTypeOffline)
+	if o.interactive {
+		openBrowser(url)
+	} else {
+		o.Printer.DefaultText.Printfln("Please, visit %s to authenticate", url)
+	}
 
 	return nil
 }
