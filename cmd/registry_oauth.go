@@ -17,14 +17,18 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"os/exec"
-	"runtime"
-
 	"github.com/falcosecurity/falcoctl/pkg/options"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/github"
+	"net/http"
+	"os/exec"
+	"runtime"
 )
+
+var longOauth = `Retrieve access and refresh tokens for OAuth2.0 authentication
+
+Example - 
+`
 
 type oauthOptions struct {
 	*options.CommonOptions
@@ -82,23 +86,62 @@ func NewOauthCmd(ctx context.Context, opt *options.CommonOptions) *cobra.Command
 	return cmd
 }
 
-func (o *oauthOptions) RunOauth(context.Context) error {
+func (o *oauthOptions) RunOauth(ctx context.Context) error {
 	conf := &oauth2.Config{
 		ClientID:     o.clientId,
 		ClientSecret: o.clientSecret,
 		Scopes:       o.scopes,
-		Endpoint:     github.Endpoint,
-		RedirectURL:  "", // make this constant, choose a "default" port
+		Endpoint: oauth2.Endpoint{
+			AuthURL:  o.authURL,
+			TokenURL: o.tokenURL,
+		},
+		RedirectURL: "http://localhost:3000/login/github/callback",
 	}
+
+	statusChan := make(chan bool, 1)
+	codeChan := make(chan string, 1)
+
+	// Prepare server for receiving the authorization code
+	go func() {
+		http.HandleFunc("/login/github/callback", func(w http.ResponseWriter, r *http.Request) {
+			code := r.URL.Query().Get("code")
+			w.Write([]byte("Please, check your command line!"))
+			w.WriteHeader(http.StatusOK)
+			if code != "" {
+				statusChan <- true
+				codeChan <- code
+			} else {
+				statusChan <- false
+			}
+		})
+		o.Printer.CheckErr(http.ListenAndServe(":3000", nil))
+	}()
 
 	// Redirect user to consent page to ask for permission
 	// for the scopes specified above.
-	url := conf.AuthCodeURL("", oauth2.AccessTypeOffline)
+	url := conf.AuthCodeURL("state", oauth2.AccessTypeOffline)
 	if o.interactive {
-		openBrowser(url)
+		if err := openBrowser(url); err != nil {
+			return fmt.Errorf("unable to open browser: %w", err)
+		}
 	} else {
 		o.Printer.DefaultText.Printfln("Please, visit %s to authenticate", url)
 	}
+
+	if !<-statusChan {
+		return fmt.Errorf("Received invalid or nil code, exiting")
+	}
+	code := <-codeChan
+
+	o.Printer.Info.Printfln("Received code: %s", code)
+
+	token, err := conf.Exchange(ctx, code)
+	if err != nil {
+		return fmt.Errorf("unable to exchange code for tokens: %w", err)
+	}
+
+	o.Printer.DefaultText.Printfln("access token: %s, refresh token: %s",
+		token.AccessToken, token.RefreshToken)
 
 	return nil
 }
