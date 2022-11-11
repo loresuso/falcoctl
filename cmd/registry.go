@@ -35,6 +35,7 @@ func NewRegistryCmd(ctx context.Context, opt *commonoptions.CommonOptions) *cobr
 	cmd.AddCommand(NewLogoutCmd(opt))
 	cmd.AddCommand(NewPushCmd(ctx, opt))
 	cmd.AddCommand(NewPullCmd(ctx, opt))
+	cmd.AddCommand(NewOauthCmd(ctx, opt))
 
 	return cmd
 }
