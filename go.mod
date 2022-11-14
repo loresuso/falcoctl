@@ -133,7 +133,7 @@ require (
 	github.com/inconshreveable/mousetrap v1.0.1 // indirect
 	github.com/stretchr/testify v1.7.2 // indirect
 	golang.org/x/net v0.2.0 // indirect
-	golang.org/x/oauth2 v0.2.0 // indirect
+	golang.org/x/oauth2 v0.2.0
 	golang.org/x/sys v0.2.0 // indirect
 	golang.org/x/term v0.2.0
 )
