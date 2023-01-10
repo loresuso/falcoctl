@@ -29,11 +29,11 @@ import (
 	"github.com/falcosecurity/falcoctl/pkg/options"
 )
 
-type indexAddOptions struct {
+type IndexAddOptions struct {
 	*options.CommonOptions
 }
 
-func (o *indexAddOptions) Validate(args []string) error {
+func (o *IndexAddOptions) Validate(args []string) error {
 	// TODO(loresuso): we should move this logic elsewhere
 	if _, err := os.Stat(config.FalcoctlPath); os.IsNotExist(err) {
 		err = os.Mkdir(config.FalcoctlPath, 0o700)
@@ -46,7 +46,7 @@ func (o *indexAddOptions) Validate(args []string) error {
 
 // NewIndexAddCmd returns the index add command.
 func NewIndexAddCmd(ctx context.Context, opt *options.CommonOptions) *cobra.Command {
-	o := indexAddOptions{
+	o := IndexAddOptions{
 		CommonOptions: opt,
 	}
 
@@ -67,7 +67,7 @@ func NewIndexAddCmd(ctx context.Context, opt *options.CommonOptions) *cobra.Comm
 	return cmd
 }
 
-func (o *indexAddOptions) RunIndexAdd(ctx context.Context, args []string) error {
+func (o *IndexAddOptions) RunIndexAdd(ctx context.Context, args []string) error {
 	name := args[0]
 	nameYaml := fmt.Sprintf("%s%s", name, ".yaml")
 	url := args[1]

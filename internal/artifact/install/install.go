@@ -30,16 +30,16 @@ import (
 	"github.com/falcosecurity/falcoctl/pkg/options"
 )
 
-type artifactInstallOptions struct {
+type ArtifactInstallOptions struct {
 	*options.CommonOptions
 	*options.RegistryOptions
-	rulesfilesDir string
-	pluginsDir    string
+	RulesfilesDir string
+	PluginsDir    string
 }
 
 // NewArtifactInstallCmd returns the artifact install command.
 func NewArtifactInstallCmd(ctx context.Context, opt *options.CommonOptions) *cobra.Command {
-	o := artifactInstallOptions{
+	o := ArtifactInstallOptions{
 		CommonOptions:   opt,
 		RegistryOptions: &options.RegistryOptions{},
 	}
@@ -56,16 +56,16 @@ func NewArtifactInstallCmd(ctx context.Context, opt *options.CommonOptions) *cob
 	}
 
 	o.RegistryOptions.AddFlags(cmd)
-	cmd.Flags().StringVarP(&o.rulesfilesDir, "rulesfiles-dir", "", config.RulesfilesDir,
+	cmd.Flags().StringVarP(&o.RulesfilesDir, "rulesfiles-dir", "", config.RulesfilesDir,
 		"directory where to install rules. Defaults to /etc/falco")
-	cmd.Flags().StringVarP(&o.pluginsDir, "plugins-dir", "", config.PluginsDir,
+	cmd.Flags().StringVarP(&o.PluginsDir, "plugins-dir", "", config.PluginsDir,
 		"directory where to install plugins. Defaults to /usr/share/falco/plugins")
 
 	return cmd
 }
 
 // RunArtifactInstall executes the business logic for the artifact install command.
-func (o *artifactInstallOptions) RunArtifactInstall(ctx context.Context, args []string) error {
+func (o *ArtifactInstallOptions) RunArtifactInstall(ctx context.Context, args []string) error {
 	o.Printer.Info.Printfln("Reading all configured index files from %q", config.IndexesFile)
 	indexConfig, err := index.NewConfig(config.IndexesFile)
 	if err != nil {
@@ -160,9 +160,9 @@ func (o *artifactInstallOptions) RunArtifactInstall(ctx context.Context, args []
 		var destDir string
 		switch result.Type {
 		case oci.Plugin:
-			destDir = o.pluginsDir
+			destDir = o.PluginsDir
 		case oci.Rulesfile:
-			destDir = o.rulesfilesDir
+			destDir = o.RulesfilesDir
 		}
 
 		sp, _ := o.Printer.Spinner.Start(fmt.Sprintf("INFO: Extracting and installing %q %q", result.Type, result.Filename))

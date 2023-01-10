@@ -24,12 +24,16 @@ falcoctl:
     "-X ${PROJECT}/pkg/version.semVersion=${RELEASE} \
     -X ${PROJECT}/pkg/version.gitCommit=${COMMIT} \
     -X ${PROJECT}/pkg/version.buildDate=${BUILD_DATE}" \
-    -o falcoctl .
+    -o ./bin/falcoctl .
 
 .PHONY: test
 test:
 	$(GO) vet ./...
 	$(GO) test ${TEST_FLAGS} ./...
+
+.PHONY: daemon
+daemon:
+	$(GO) build -o ./bin/falcoctld ./cmd/falcoctld/*.go 
 
 # Install gci if not available
 gci:

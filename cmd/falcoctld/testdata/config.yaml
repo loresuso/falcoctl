@@ -1,0 +1,20 @@
+  - registry: ghcr.io
+    # Here goes the clienID when the type is "oauth2"
+    user: loresuso
+    # base64 token
+    token: pippo
+    type: basic
+
+# List of urls from where to download the index files
+indexes:
+  - name: falcosecurity
+    url: https://falcosecurity.github.io/falcoctl/index.yaml
+
+# List of artifacts:
+artifacts:
+  - name: k8saudit
+    # here we follow the latest tag.
+    follow: true
+
+plainhttp: false
+oauth: false
