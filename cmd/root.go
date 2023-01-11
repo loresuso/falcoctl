@@ -18,19 +18,20 @@ import (
 	"context"
 	"fmt"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 
+	"github.com/falcosecurity/falcoctl/internal/config"
 	"github.com/falcosecurity/falcoctl/internal/version"
 	"github.com/falcosecurity/falcoctl/pkg/options"
 	"github.com/falcosecurity/falcoctl/pkg/output"
 )
 
 // New instantiates the root command and initializes the tree of commands.
-func New(ctx context.Context) *cobra.Command {
-	opt := options.NewOptions()
-
+func New(ctx context.Context, opt *options.CommonOptions) *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:               "falcoctl",
 		Short:             "The control tool for running Falco in Kubernetes",
@@ -39,11 +40,18 @@ func New(ctx context.Context) *cobra.Command {
 			// Initializing the options. Subcommands can overwrite configs for the options
 			// by calling the initialize function.
 			opt.Initialize()
+			opt.Printer.CheckErr(initConfig(opt))
 		},
 	}
 
 	// Global flags
 	opt.AddFlags(rootCmd.PersistentFlags())
+
+	// Add global config
+	rootCmd.PersistentFlags().StringVar(&opt.ConfigFile,
+		"config",
+		config.ConfigPath,
+		"config file to be used for falcoctl")
 
 	// Commands
 	rootCmd.AddCommand(NewTLSCmd())
@@ -53,6 +61,28 @@ func New(ctx context.Context) *cobra.Command {
 	rootCmd.AddCommand(NewArtifactCmd(ctx, opt))
 
 	return rootCmd
+}
+
+func initConfig(opt *options.CommonOptions) error {
+	viper.SetConfigName("config")
+
+	absolutePath, err := filepath.Abs(opt.ConfigFile)
+	if err != nil {
+		return err
+	}
+
+	viper.AddConfigPath(filepath.Dir(absolutePath))
+	viper.SetConfigType("yaml")
+
+	if err := viper.ReadInConfig(); err != nil {
+		return fmt.Errorf("config: error reading config file: %w", err)
+	}
+
+	if err := viper.Unmarshal(&opt.Config); err != nil {
+		return fmt.Errorf("config: unable to decode into struct: %w", err)
+	}
+
+	return nil
 }
 
 // Execute creates the root command and runs it.
@@ -66,7 +96,10 @@ func Execute() {
 		stop()
 	}()
 
+	opt := options.NewOptions()
+	cmd := New(ctx, opt)
+
 	// we do not log the error here since we expect that each subcommand
 	// handles the errors by itself.
-	output.ExitOnErr(New(ctx).Execute())
+	output.ExitOnErr(cmd.Execute())
 }

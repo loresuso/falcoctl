@@ -33,6 +33,8 @@ var (
 )
 
 const (
+	// ConfigPath is the path to the default config
+	ConfigPath = "/etc/falcoctl/config.yaml"
 	// PluginsDir default path where plugins are installed.
 	PluginsDir = "/usr/share/falco/plugins"
 	// RulesfilesDir default path where rulesfiles are installed.
@@ -41,6 +43,40 @@ const (
 	// Default values is set every 24 hours.
 	FollowResync = time.Hour * 24
 )
+
+// Index represents a configured index
+type Index struct {
+	Name string `mapstructure:"name"`
+	URL  string `mapstructure:"url"`
+}
+
+// Oauth represents an OAuth credential
+type AuthOauth struct {
+	Registry     string `mapstructure:"registry"`
+	ClientSecret string `mapstructure:"client_secret"`
+	ClientID     string `mapstructure:"client_id"`
+	TokenURL     string `mapstructure:"token_url"`
+}
+
+// Basic represents a Basic credential
+type AuthBasic struct {
+	Registry string `mapstructure:"registry"`
+	User     string `mapstructure:"user"`
+	Password string `mapstructure:"password"`
+}
+
+// Follow represents the follower configuration
+type Follow struct {
+	Every string `mapstructure:"every"`
+}
+
+// Config represents the global config file for falcoctl
+type Config struct {
+	Indexes   []Index     `mapstructure:"indexes"`
+	AuthOauth []AuthOauth `mapstructure:"authOauth"`
+	AuthBasic []AuthBasic `mapstructure:"authBasic"`
+	Follow    Follow      `mapstructure:"follow"`
+}
 
 func init() {
 	ConfigDir = filepath.Join(homedir.Get(), ".config")

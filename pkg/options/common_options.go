@@ -19,6 +19,7 @@ import (
 
 	"github.com/spf13/pflag"
 
+	"github.com/falcosecurity/falcoctl/internal/config"
 	"github.com/falcosecurity/falcoctl/pkg/output"
 )
 
@@ -37,6 +38,11 @@ type CommonOptions struct {
 	verbose bool
 	// Disable the styling if set to true.
 	disableStyling bool
+	// Config file. It must not be possible to be reinitialized by subcommands,
+	// using the Initialize function. It will be attached as global flags.
+	ConfigFile string
+	// Config is the loaded config.
+	Config *config.Config
 }
 
 // NewOptions returns a new CommonOptions struct.
