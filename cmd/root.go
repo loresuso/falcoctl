@@ -78,7 +78,7 @@ func initConfig(opt *options.CommonOptions) error {
 		return fmt.Errorf("config: error reading config file: %w", err)
 	}
 
-	if err := viper.Unmarshal(opt.Config); err != nil {
+	if err := viper.Unmarshal(&opt.Config); err != nil {
 		return fmt.Errorf("config: unable to decode into struct: %w", err)
 	}
 

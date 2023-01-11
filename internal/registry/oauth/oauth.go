@@ -39,14 +39,14 @@ Example
 `
 )
 
-type oauthOptions struct {
+type OauthOptions struct {
 	*options.CommonOptions
-	conf clientcredentials.Config
+	Conf clientcredentials.Config
 }
 
 // NewOauthCmd returns the oauth command.
 func NewOauthCmd(ctx context.Context, opt *options.CommonOptions) *cobra.Command {
-	o := oauthOptions{
+	o := OauthOptions{
 		CommonOptions: opt,
 	}
 
@@ -61,35 +61,35 @@ func NewOauthCmd(ctx context.Context, opt *options.CommonOptions) *cobra.Command
 		},
 	}
 
-	cmd.Flags().StringVar(&o.conf.TokenURL, "token-url", "", "token URL used to get access and refresh tokens")
+	cmd.Flags().StringVar(&o.Conf.TokenURL, "token-url", "", "token URL used to get access and refresh tokens")
 	if err := cmd.MarkFlagRequired("token-url"); err != nil {
 		o.Printer.Error.Println("unable to mark flag \"token-url\" as required")
 		return nil
 	}
-	cmd.Flags().StringVar(&o.conf.ClientID, "client-id", "", "client ID of the OAuth2.0 app")
+	cmd.Flags().StringVar(&o.Conf.ClientID, "client-id", "", "client ID of the OAuth2.0 app")
 	if err := cmd.MarkFlagRequired("client-id"); err != nil {
 		o.Printer.Error.Println("unable to mark flag \"client-id\" as required")
 		return nil
 	}
-	cmd.Flags().StringVar(&o.conf.ClientSecret, "client-secret", "", "client secret of the OAuth2.0 app")
+	cmd.Flags().StringVar(&o.Conf.ClientSecret, "client-secret", "", "client secret of the OAuth2.0 app")
 	if err := cmd.MarkFlagRequired("client-secret"); err != nil {
 		o.Printer.Error.Println("unable to mark flag \"client-secret\" as required")
 		return nil
 	}
-	cmd.Flags().StringSliceVar(&o.conf.Scopes, "scopes", nil, "comma separeted list of scopes for which requesting access")
+	cmd.Flags().StringSliceVar(&o.Conf.Scopes, "scopes", nil, "comma separeted list of scopes for which requesting access")
 
 	return cmd
 }
 
-func (o *oauthOptions) RunOauth(ctx context.Context) error {
+func (o *OauthOptions) RunOauth(ctx context.Context) error {
 	// Check that we can retrieve token using the passed credentials.
-	_, err := o.conf.Token(ctx)
+	_, err := o.Conf.Token(ctx)
 	if err != nil {
 		return fmt.Errorf("wrong client credentials, unable to retrieve token: %w", err)
 	}
 
 	// Save client credentials to file.
-	if err = utils.WriteClientCredentials(&o.conf); err != nil {
+	if err = utils.WriteClientCredentials(&o.Conf); err != nil {
 		return fmt.Errorf("unable to save token: %w", err)
 	}
 
