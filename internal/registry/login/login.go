@@ -85,6 +85,15 @@ func (o *loginOptions) RunLogin(ctx context.Context, args []string) error {
 		Password: token,
 	}
 
+	if err = DoLogin(ctx, reg, cred); err != nil {
+		return err
+	}
+
+	o.Printer.Success.Println("Login succeeded")
+	return nil
+}
+
+func DoLogin(ctx context.Context, reg string, cred *auth.Credential) error {
 	client := authn.NewClient(authn.WithCredentials(cred))
 	r, err := registry.NewRegistry(reg, registry.WithClient(client))
 	if err != nil {
@@ -92,16 +101,14 @@ func (o *loginOptions) RunLogin(ctx context.Context, args []string) error {
 	}
 
 	if err := r.CheckConnection(ctx); err != nil {
-		o.Printer.Verbosef("%s", err.Error())
 		return fmt.Errorf("unable to connect to registry %q: %w", reg, err)
 	}
 
 	// Store validated credentials
-	err = authn.Login(o.hostname, user, token)
+	err = authn.Login(reg, cred.Username, cred.Password)
 	if err != nil {
 		return err
 	}
 
-	o.Printer.Success.Println("Login succeeded")
 	return nil
 }

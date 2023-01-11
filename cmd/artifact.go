@@ -16,14 +16,17 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/spf13/cobra"
+	"oras.land/oras-go/v2/registry/remote/auth"
 
 	"github.com/falcosecurity/falcoctl/internal/artifact/follow"
 	"github.com/falcosecurity/falcoctl/internal/artifact/info"
 	"github.com/falcosecurity/falcoctl/internal/artifact/install"
 	"github.com/falcosecurity/falcoctl/internal/artifact/list"
 	"github.com/falcosecurity/falcoctl/internal/artifact/search"
+	"github.com/falcosecurity/falcoctl/internal/registry/login"
 	commonoptions "github.com/falcosecurity/falcoctl/pkg/options"
 )
 
@@ -34,6 +37,21 @@ func NewArtifactCmd(ctx context.Context, opt *commonoptions.CommonOptions) *cobr
 		DisableFlagsInUseLine: true,
 		Short:                 "Interact with Falco artifacts",
 		Long:                  "Interact with Falco artifacts",
+		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			// add indexes if needed
+			// Set up basic authentication
+			fmt.Println(opt.Config)
+			for _, basicAuth := range opt.Config.AuthBasic {
+				cred := &auth.Credential{
+					Username: basicAuth.User,
+					Password: basicAuth.Password,
+				}
+
+				opt.Printer.CheckErr(login.DoLogin(ctx, basicAuth.Registry, cred))
+			}
+
+			fmt.Println("heyyyyyyyy")
+		},
 	}
 
 	cmd.AddCommand(search.NewArtifactSearchCmd(ctx, opt))
