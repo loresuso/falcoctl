@@ -53,9 +53,9 @@ type Index struct {
 // Oauth represents an OAuth credential
 type AuthOauth struct {
 	Registry     string `mapstructure:"registry"`
-	ClientSecret string `mapstructure:"client_secret"`
-	ClientID     string `mapstructure:"client_id"`
-	TokenURL     string `mapstructure:"token_url"`
+	ClientSecret string `mapstructure:"clientSecret"`
+	ClientID     string `mapstructure:"clientID"`
+	TokenURL     string `mapstructure:"tokenURL"`
 }
 
 // Basic represents a Basic credential
