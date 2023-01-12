@@ -59,8 +59,6 @@ type Config struct {
 	ArtifactReference string
 	// PlainHTTP is set to true if all registry interaction must be in plain http.
 	PlainHTTP bool
-	// Oauth is set to true if the authentication must be through Oauth2.0 client credentials flow.
-	Oauth bool
 	// Verbose enables the verbose logs.
 	Verbose bool
 }
@@ -78,7 +76,7 @@ func New(ctx context.Context, ref string, printer *output.Printer, config *Confi
 		return nil, fmt.Errorf("unable to extract tag from ref %q: %w", ref, err)
 	}
 
-	client, err := utils.ClientForRegistry(ctx, reg, config.PlainHTTP, config.Oauth, printer)
+	client, err := utils.ClientForRegistry(ctx, reg, config.PlainHTTP, printer)
 	if err != nil {
 		return nil, err
 	}

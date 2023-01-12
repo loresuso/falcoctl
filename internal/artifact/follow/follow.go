@@ -132,7 +132,6 @@ func (o *artifactFollowOptions) RunArtifactFollow(ctx context.Context, args []st
 			PluginsDir:        o.pluginsDir,
 			ArtifactReference: ref,
 			PlainHTTP:         o.PlainHTTP,
-			Oauth:             o.Oauth,
 			Verbose:           o.IsVerbose(),
 			CloseChan:         o.closeChan,
 		}

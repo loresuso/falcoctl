@@ -35,7 +35,8 @@ Example
 	falcoctl registry oauth \
 		--token-url="http://localhost:9096/token" \
 		--client-id=000000 \
-		--client-secret=999999  --scopes="my-scope"
+		--client-secret=999999  --scopes="my-scope" \ 
+		hostname
 `
 )
 
@@ -55,9 +56,9 @@ func NewOauthCmd(ctx context.Context, opt *options.CommonOptions) *cobra.Command
 		DisableFlagsInUseLine: true,
 		Short:                 "Retrieve access and refresh tokens for OAuth2.0 client credentials flow authentication",
 		Long:                  longOauth,
-		Args:                  cobra.ExactArgs(0),
+		Args:                  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			o.Printer.CheckErr(o.RunOauth(ctx))
+			o.Printer.CheckErr(o.RunOauth(ctx, args))
 		},
 	}
 
@@ -81,7 +82,9 @@ func NewOauthCmd(ctx context.Context, opt *options.CommonOptions) *cobra.Command
 	return cmd
 }
 
-func (o *OauthOptions) RunOauth(ctx context.Context) error {
+func (o *OauthOptions) RunOauth(ctx context.Context, args []string) error {
+	reg := args[0]
+
 	// Check that we can retrieve token using the passed credentials.
 	_, err := o.Conf.Token(ctx)
 	if err != nil {
@@ -89,7 +92,7 @@ func (o *OauthOptions) RunOauth(ctx context.Context) error {
 	}
 
 	// Save client credentials to file.
-	if err = utils.WriteClientCredentials(&o.Conf); err != nil {
+	if err = utils.WriteClientCredentials(reg, &o.Conf); err != nil {
 		return fmt.Errorf("unable to save token: %w", err)
 	}
 

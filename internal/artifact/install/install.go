@@ -100,7 +100,7 @@ func (o *artifactInstallOptions) RunArtifactInstall(ctx context.Context, args []
 			return nil, err
 		}
 
-		puller, err := utils.PullerForRegistry(ctx, reg, o.PlainHTTP, o.Oauth, o.Printer)
+		puller, err := utils.PullerForRegistry(ctx, reg, o.PlainHTTP, o.Printer)
 		if err != nil {
 			return nil, err
 		}
@@ -146,7 +146,7 @@ func (o *artifactInstallOptions) RunArtifactInstall(ctx context.Context, args []
 			return err
 		}
 
-		puller, err := utils.PullerForRegistry(ctx, reg, o.PlainHTTP, o.Oauth, o.Printer)
+		puller, err := utils.PullerForRegistry(ctx, reg, o.PlainHTTP, o.Printer)
 		if err != nil {
 			return err
 		}
