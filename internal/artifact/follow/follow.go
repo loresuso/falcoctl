@@ -62,6 +62,7 @@ type artifactFollowOptions struct {
 	*options.RegistryOptions
 	rulesfilesDir string
 	pluginsDir    string
+	workingDir    string
 	every         time.Duration
 	closeChan     chan bool
 }
@@ -92,7 +93,7 @@ func NewArtifactFollowCmd(ctx context.Context, opt *options.CommonOptions) *cobr
 		"Directory where to install rules")
 	cmd.Flags().StringVarP(&o.pluginsDir, "plugins-dir", "", config.PluginsDir,
 		"Directory where to install plugins")
-
+	cmd.Flags().StringVar(&o.workingDir, "working-dir", "", "Directory where to save temporary files")
 	return cmd
 }
 
@@ -134,6 +135,7 @@ func (o *artifactFollowOptions) RunArtifactFollow(ctx context.Context, args []st
 			PlainHTTP:         o.PlainHTTP,
 			Verbose:           o.IsVerbose(),
 			CloseChan:         o.closeChan,
+			WorkingDir:        o.workingDir,
 		}
 		fol, err := follower.New(ctx, ref, o.Printer, cfg)
 		if err != nil {

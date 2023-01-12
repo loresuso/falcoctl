@@ -61,6 +61,8 @@ type Config struct {
 	PlainHTTP bool
 	// Verbose enables the verbose logs.
 	Verbose bool
+	// WorkingDir directory where to save temporary files.
+	WorkingDir string
 }
 
 // New creates a Follower configured with the passed parameters and ready to be used.
@@ -87,7 +89,7 @@ func New(ctx context.Context, ref string, printer *output.Printer, config *Confi
 	}
 
 	// Create temp dir where to put pulled artifacts.
-	workingDir, err := os.MkdirTemp("", "falcoctl-")
+	workingDir, err := os.MkdirTemp(config.WorkingDir, "falcoctl-")
 	if err != nil {
 		return nil, fmt.Errorf("unable to create temporary directory: %w", err)
 	}
