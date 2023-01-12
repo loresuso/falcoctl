@@ -41,8 +41,6 @@ type CommonOptions struct {
 	// Config file. It must not be possible to be reinitialized by subcommands,
 	// using the Initialize function. It will be attached as global flags.
 	ConfigFile string
-	// Config is the loaded config.
-	Config *config.Config
 }
 
 // NewOptions returns a new CommonOptions struct.
@@ -88,4 +86,6 @@ func (o *CommonOptions) AddFlags(flags *pflag.FlagSet) {
 	flags.BoolVarP(&o.verbose, "verbose", "v", false, "Enable verbose logs (default false)")
 	flags.BoolVar(&o.disableStyling, "disable-styling", false, "Disable output styling such as spinners, progress bars and colors. "+
 		"Styling is automatically disabled if not attacched to a tty (default false)")
+	// Add global config
+	flags.StringVar(&o.ConfigFile, "config", config.ConfigPath, "config file to be used for falcoctl")
 }

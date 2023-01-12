@@ -15,10 +15,15 @@
 package config
 
 import (
+	"fmt"
 	"path/filepath"
+	"reflect"
+	"strings"
 	"time"
 
 	"github.com/docker/docker/pkg/homedir"
+	"github.com/mitchellh/mapstructure"
+	"github.com/spf13/viper"
 )
 
 var (
@@ -33,7 +38,9 @@ var (
 )
 
 const (
-	// ConfigPath is the path to the default config
+	// EnvPrefix is the prefix for all the environment variables.
+	EnvPrefix = "FALCOCTL"
+	// ConfigPath is the path to the default config.
 	ConfigPath = "/etc/falcoctl/config.yaml"
 	// PluginsDir default path where plugins are installed.
 	PluginsDir = "/usr/share/falco/plugins"
@@ -44,38 +51,38 @@ const (
 	FollowResync = time.Hour * 24
 )
 
-// Index represents a configured index
+// Index represents a configured index.
 type Index struct {
 	Name string `mapstructure:"name"`
 	URL  string `mapstructure:"url"`
 }
 
-// Oauth represents an OAuth credential
-type AuthOauth struct {
+// Oauth represents an OAuth credential.
+type OauthAuth struct {
 	Registry     string `mapstructure:"registry"`
 	ClientSecret string `mapstructure:"clientSecret"`
 	ClientID     string `mapstructure:"clientID"`
 	TokenURL     string `mapstructure:"tokenURL"`
 }
 
-// Basic represents a Basic credential
-type AuthBasic struct {
+// Basic represents a Basic credential.
+type BasicAuth struct {
 	Registry string `mapstructure:"registry"`
 	User     string `mapstructure:"user"`
 	Password string `mapstructure:"password"`
 }
 
-// Follow represents the follower configuration
+// Follow represents the follower configuration.
 type Follow struct {
 	Every string `mapstructure:"every"`
 }
 
-// Config represents the global config file for falcoctl
+// Config represents the global config file for falcoctl.
 type Config struct {
-	Indexes   []Index     `mapstructure:"indexes"`
-	AuthOauth []AuthOauth `mapstructure:"authOauth"`
-	AuthBasic []AuthBasic `mapstructure:"authBasic"`
-	Follow    Follow      `mapstructure:"follow"`
+	Indexes    []Index     `mapstructure:"indexes"`
+	OauthAuths []OauthAuth `mapstructure:"OauthAuths"`
+	BasicAuths []BasicAuth `mapstructure:"basicAuths"`
+	Follow     Follow      `mapstructure:"follow"`
 }
 
 func init() {
@@ -83,4 +90,126 @@ func init() {
 	FalcoctlPath = filepath.Join(ConfigDir, "falcoctl")
 	IndexesFile = filepath.Join(FalcoctlPath, "indexes.yaml")
 	ClientCredentialsFile = filepath.Join(FalcoctlPath, "clientcredentials.json")
+}
+
+func Load(path string) error {
+	viper.SetConfigName("config")
+
+	absolutePath, err := filepath.Abs(path)
+	if err != nil {
+		return err
+	}
+
+	viper.AddConfigPath(filepath.Dir(absolutePath))
+	viper.SetConfigType("yaml")
+
+	if err := viper.ReadInConfig(); err != nil {
+		return fmt.Errorf("config: error reading config file: %w", err)
+	}
+
+	viper.SetEnvPrefix(EnvPrefix)
+
+	// Environment variables can't have dashes in them, so bind them to their equivalent
+	// keys with underscores.
+	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
+
+	// Bind to environment variables.
+	viper.AutomaticEnv()
+
+	return nil
+}
+
+func Indexes() ([]Index, error) {
+	indexes := []Index{}
+
+	if err := viper.UnmarshalKey("indexes", &indexes, viper.DecodeHook(indexListHookFunc())); err != nil {
+		return nil, fmt.Errorf("unable to get indexes: %w", err)
+	}
+
+	return indexes, nil
+}
+
+// indexListHookFunc returns a DecodeHookFunc that converts
+// strings to string slices, when the target type is DotSeparatedStringList.
+// "falcosecurity,https://falcosecurity.github.io/falcoctl/index.yaml;myindex,url"
+func indexListHookFunc() mapstructure.DecodeHookFuncType {
+	return func(f reflect.Type, t reflect.Type, data interface{}) (interface{}, error) {
+		if f.Kind() != reflect.String && f.Kind() != reflect.Slice {
+			return data, nil
+		}
+
+		if t != reflect.TypeOf([]Index{}) {
+			return data, fmt.Errorf("unable to decode data since destination variable is not of type %T", []Index{})
+		}
+
+		switch f.Kind() {
+		case reflect.String:
+			tokens := strings.Split(data.(string), ";")
+			indexes := make([]Index, len(tokens))
+			for i, token := range tokens {
+				values := strings.Split(token, ",")
+				indexes[i] = Index{
+					Name: values[0],
+					URL:  values[1],
+				}
+			}
+			return indexes, nil
+		case reflect.Slice:
+			config := Config{}
+			if err := mapstructure.WeakDecode(data, &config.Indexes); err != nil {
+				return err, nil
+			}
+			return config.Indexes, nil
+		default:
+			return nil, nil
+		}
+	}
+}
+
+func BasicAuths() ([]BasicAuth, error) {
+	auths := []BasicAuth{}
+
+	if err := viper.UnmarshalKey("basicAuths", &auths, viper.DecodeHook(basicAuthListHookFunc())); err != nil {
+		return nil, fmt.Errorf("unable to get basicAuths: %w", err)
+	}
+
+	return auths, nil
+}
+
+// basicAuthListHookFunc returns a DecodeHookFunc that converts
+// strings to string slices, when the target type is DotSeparatedStringList.
+// "registry,username,password;registry1,username1,password1".
+func basicAuthListHookFunc() mapstructure.DecodeHookFuncType {
+	return func(f reflect.Type, t reflect.Type, data interface{}) (interface{}, error) {
+		if f.Kind() != reflect.String && f.Kind() != reflect.Slice {
+			return data, nil
+		}
+
+		if t != reflect.TypeOf([]BasicAuth{}) {
+			return data, fmt.Errorf("unable to decode data since destination variable is not of type %T", []BasicAuth{})
+		}
+
+		switch f.Kind() {
+		case reflect.String:
+			tokens := strings.Split(data.(string), ";")
+			auths := make([]BasicAuth, len(tokens))
+			for i, token := range tokens {
+				values := strings.Split(token, ",")
+				auths[i] = BasicAuth{
+					Registry: values[0],
+					User:     values[1],
+					Password: values[2],
+				}
+			}
+			return auths, nil
+		case reflect.Slice:
+			config := Config{}
+			if err := mapstructure.WeakDecode(data, &config.BasicAuths); err != nil {
+				return err, nil
+			}
+			return config.BasicAuths, nil
+		default:
+			return nil, nil
+		}
+	}
 }

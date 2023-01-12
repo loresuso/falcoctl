@@ -17,8 +17,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"github.com/falcosecurity/falcoctl/internal/index/add"
-	"golang.org/x/oauth2/clientcredentials"
 
 	"github.com/spf13/cobra"
 	"oras.land/oras-go/v2/registry/remote/auth"
@@ -28,8 +26,9 @@ import (
 	"github.com/falcosecurity/falcoctl/internal/artifact/install"
 	"github.com/falcosecurity/falcoctl/internal/artifact/list"
 	"github.com/falcosecurity/falcoctl/internal/artifact/search"
+	"github.com/falcosecurity/falcoctl/internal/config"
+	"github.com/falcosecurity/falcoctl/internal/index/add"
 	"github.com/falcosecurity/falcoctl/internal/registry/login"
-	"github.com/falcosecurity/falcoctl/internal/registry/oauth"
 	commonoptions "github.com/falcosecurity/falcoctl/pkg/options"
 )
 
@@ -41,12 +40,30 @@ func NewArtifactCmd(ctx context.Context, opt *commonoptions.CommonOptions) *cobr
 		Short:                 "Interact with Falco artifacts",
 		Long:                  "Interact with Falco artifacts",
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
-			opt.Initialize()
-			opt.Printer.CheckErr(initConfig(opt))
+
+			cmd.Parent().PersistentPreRun(cmd.Parent(), nil)
+			// Since the function is inherited by the child commands, we make sure that the logic that need to
+			// be executed only by the children does not run in the parent command.
+			if cmd.Name() == "artifact" {
+				return
+			}
 			// add indexes if needed
 			// Set up basic authentication
-			fmt.Println(opt.Config)
-			for _, basicAuth := range opt.Config.AuthBasic {
+
+			indexes, err := config.Indexes()
+			opt.Printer.CheckErr(err)
+
+			for _, ind := range indexes {
+				indexMgr := add.IndexAddOptions{
+					CommonOptions: opt,
+				}
+				opt.Printer.CheckErr(indexMgr.Validate([]string{ind.Name, ind.URL}))
+				opt.Printer.CheckErr(indexMgr.RunIndexAdd(ctx, []string{ind.Name, ind.URL}))
+			}
+
+			basicAuths, err := config.BasicAuths()
+			opt.Printer.CheckErr(err)
+			for _, basicAuth := range basicAuths {
 				cred := &auth.Credential{
 					Username: basicAuth.User,
 					Password: basicAuth.Password,
@@ -54,26 +71,27 @@ func NewArtifactCmd(ctx context.Context, opt *commonoptions.CommonOptions) *cobr
 
 				opt.Printer.CheckErr(login.DoLogin(ctx, basicAuth.Registry, cred))
 			}
+			/*
 
-			for _, auth := range opt.Config.AuthOauth {
-				oauthMgr := oauth.OauthOptions{
-					CommonOptions: opt,
-					Conf: clientcredentials.Config{
-						ClientID:       auth.ClientID,
-						ClientSecret:   auth.ClientSecret,
-						TokenURL:       auth.TokenURL,
-					},
+				for _, auth := range opt.Config.OauthAuth {
+					oauthMgr := oauth.OauthOptions{
+						CommonOptions: opt,
+						Conf: clientcredentials.Config{
+							ClientID:       auth.ClientID,
+							ClientSecret:   auth.ClientSecret,
+							TokenURL:       auth.TokenURL,
+						},
+					}
+					opt.Printer.CheckErr(oauthMgr.RunOauth(ctx))
 				}
-				opt.Printer.CheckErr(oauthMgr.RunOauth(ctx))
-			}
 
-			for _, ind := range opt.Config.Indexes{
-				indexMgr := add.IndexAddOptions{
-					CommonOptions: opt,
-				}
-				opt.Printer.CheckErr(indexMgr.Validate([]string{ind.Name, ind.URL}))
-				opt.Printer.CheckErr(indexMgr.RunIndexAdd(ctx, []string{ind.Name, ind.URL}))
-			}
+				for _, ind := range opt.Config.Indexes{
+					indexMgr := add.IndexAddOptions{
+						CommonOptions: opt,
+					}
+					opt.Printer.CheckErr(indexMgr.Validate([]string{ind.Name, ind.URL}))
+					opt.Printer.CheckErr(indexMgr.RunIndexAdd(ctx, []string{ind.Name, ind.URL}))
+				}*/
 
 			fmt.Println("heyyyyyyyy")
 		},
