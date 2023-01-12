@@ -29,6 +29,7 @@ import (
 	"github.com/falcosecurity/falcoctl/pkg/oci"
 	ocipuller "github.com/falcosecurity/falcoctl/pkg/oci/puller"
 	"github.com/falcosecurity/falcoctl/pkg/output"
+	"oras.land/oras-go/v2/registry"
 )
 
 // Follower knows how to track an artifact in a remote repository given the reference.
@@ -73,10 +74,11 @@ func New(ctx context.Context, ref string, printer *output.Printer, config *Confi
 		return nil, fmt.Errorf("unable to extract registry from ref %q: %w", ref, err)
 	}
 
-	tag, err := utils.TagFromRef(ref)
+	parsedRef, err := registry.ParseReference(ref)
 	if err != nil {
 		return nil, fmt.Errorf("unable to extract tag from ref %q: %w", ref, err)
 	}
+	tag := parsedRef.Reference
 
 	client, err := utils.ClientForRegistry(ctx, reg, config.PlainHTTP, printer)
 	if err != nil {
