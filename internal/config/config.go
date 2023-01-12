@@ -52,8 +52,8 @@ const (
 	// Default values is set every 24 hours.
 	FollowResync = time.Hour * 24
 
-	oauthAuthsKey = "oauthauths"
-	basicAuthsKey = "basicauths"
+	OauthAuthsKey = "oauthauths"
+	BasicAuthsKey = "basicauths"
 	IndexesKey    = "indexes"
 )
 
@@ -194,7 +194,7 @@ func indexListHookFunc() mapstructure.DecodeHookFuncType {
 func BasicAuths() ([]BasicAuth, error) {
 	var auths []BasicAuth
 
-	if err := viper.UnmarshalKey(basicAuthsKey, &auths, viper.DecodeHook(basicAuthListHookFunc())); err != nil {
+	if err := viper.UnmarshalKey(BasicAuthsKey, &auths, viper.DecodeHook(basicAuthListHookFunc())); err != nil {
 		return nil, fmt.Errorf("unable to get basicAuths: %w", err)
 	}
 
@@ -243,7 +243,7 @@ func basicAuthListHookFunc() mapstructure.DecodeHookFuncType {
 func OauthAuths() ([]OauthAuth, error) {
 	var auths []OauthAuth
 
-	if err := viper.UnmarshalKey(oauthAuthsKey, &auths, viper.DecodeHook(oathAuthListHookFunc())); err != nil {
+	if err := viper.UnmarshalKey(OauthAuthsKey, &auths, viper.DecodeHook(oathAuthListHookFunc())); err != nil {
 		return nil, fmt.Errorf("unable to get oauthAuths: %w", err)
 	}
 

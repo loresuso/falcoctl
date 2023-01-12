@@ -94,6 +94,7 @@ func (o *indexRemoveOptions) RunIndexRemove(ctx context.Context, args []string) 
 			if ind.Name == name {
 				o.Printer.Verbosef("index with name %q exists in the config file %q, removing", name, config.ConfigPath)
 				currentIndexes = append(currentIndexes[:i], currentIndexes[i+1:]...)
+				break
 			}
 		}
 	}
