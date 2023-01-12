@@ -52,9 +52,13 @@ const (
 	// Default values is set every 24 hours.
 	FollowResync = time.Hour * 24
 
-	OauthAuthsKey = "oauthauths"
-	BasicAuthsKey = "basicauths"
-	IndexesKey    = "indexes"
+	// Viper configuration keys.
+	OauthAuthsKey         = "oauthauths"
+	BasicAuthsKey         = "basicauths"
+	IndexesKey            = "indexes"
+	FollowerEveryKey      = "follower.every"
+	FollowerArtifactsKey  = "follower.artifacts"
+	InstallerArtifactsKey = "installer.artifacts"
 )
 
 // Index represents a configured index.
@@ -80,7 +84,13 @@ type BasicAuth struct {
 
 // Follow represents the follower configuration.
 type Follow struct {
-	Every string `mapstructure:"every"`
+	Every     string   `mapstructure:"every"`
+	Artifacts []string `mapstructure:"artifacts"`
+}
+
+// Install represents the installer configuration
+type Install struct {
+	Artifacts []string `mapstructure:"artifacts"`
 }
 
 func init() {
@@ -109,8 +119,8 @@ func Load(path string) error {
 	viper.SetEnvPrefix(EnvPrefix)
 
 	// Environment variables can't have dashes in them, so bind them to their equivalent
-	// keys with underscores.
-	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
+	// keys with underscores. Also, consider nested keys by replacing dot with underscore.
+	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_", ".", "_"))
 
 	// Bind to environment variables.
 	viper.AutomaticEnv()
@@ -126,31 +136,6 @@ func Indexes() ([]Index, error) {
 	}
 
 	return indexes, nil
-}
-
-func UpdateConfigFile(key string, value interface{}) error {
-	v := viper.New()
-	v.SetConfigName("config")
-
-	absolutePath, err := filepath.Abs(ConfigPath)
-	if err != nil {
-		return err
-	}
-
-	v.AddConfigPath(filepath.Dir(absolutePath))
-	v.SetConfigType("yaml")
-
-	if err := v.ReadInConfig(); err != nil {
-		return fmt.Errorf("config: error reading config file: %w", err)
-	}
-
-	v.Set(key, value)
-
-	if err := v.WriteConfig(); err != nil {
-		return fmt.Errorf("unable to set key %q to config file: %w", IndexesKey, err)
-	}
-
-	return nil
 }
 
 // indexListHookFunc returns a DecodeHookFunc that converts
@@ -288,4 +273,56 @@ func oathAuthListHookFunc() mapstructure.DecodeHookFuncType {
 			return nil, nil
 		}
 	}
+}
+
+func Follower() (Follow, error) {
+	// with Follow we can just use nested keys.
+	// env variables can just make use of ";" to separat
+	artifacts := viper.GetStringSlice(FollowerArtifactsKey)
+	if len(artifacts) == 1 { // in this case it might come from the env
+		artifacts = strings.Split(artifacts[0], ";")
+	}
+
+	return Follow{
+		Every:     viper.GetString(FollowerEveryKey),
+		Artifacts: artifacts,
+	}, nil
+}
+
+func Installer() (Install, error) {
+	// with Install we can just use nested keys.
+	// env variables can just make use of ";" to separat
+	artifacts := viper.GetStringSlice(InstallerArtifactsKey)
+	if len(artifacts) == 1 { // in this case it might come from the env
+		artifacts = strings.Split(artifacts[0], ";")
+	}
+
+	return Install{
+		Artifacts: artifacts,
+	}, nil
+}
+
+func UpdateConfigFile(key string, value interface{}) error {
+	v := viper.New()
+	v.SetConfigName("config")
+
+	absolutePath, err := filepath.Abs(ConfigPath)
+	if err != nil {
+		return err
+	}
+
+	v.AddConfigPath(filepath.Dir(absolutePath))
+	v.SetConfigType("yaml")
+
+	if err := v.ReadInConfig(); err != nil {
+		return fmt.Errorf("config: error reading config file: %w", err)
+	}
+
+	v.Set(key, value)
+
+	if err := v.WriteConfig(); err != nil {
+		return fmt.Errorf("unable to set key %q to config file: %w", IndexesKey, err)
+	}
+
+	return nil
 }

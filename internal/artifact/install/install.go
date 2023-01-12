@@ -49,7 +49,6 @@ func NewArtifactInstallCmd(ctx context.Context, opt *options.CommonOptions) *cob
 		DisableFlagsInUseLine: true,
 		Short:                 "Install a list of artifacts",
 		Long:                  "Install a list of artifacts",
-		Args:                  cobra.MinimumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			o.Printer.CheckErr(o.RunArtifactInstall(ctx, args))
 		},
@@ -66,6 +65,14 @@ func NewArtifactInstallCmd(ctx context.Context, opt *options.CommonOptions) *cob
 
 // RunArtifactInstall executes the business logic for the artifact install command.
 func (o *artifactInstallOptions) RunArtifactInstall(ctx context.Context, args []string) error {
+	if len(args) == 0 {
+		configuredInstaller, err := config.Installer()
+		if err != nil {
+			return fmt.Errorf("unable to retrieved the configured follower: %w", err)
+		}
+		args = configuredInstaller.Artifacts
+	}
+
 	o.Printer.Info.Printfln("Reading all configured index files from %q", config.IndexesFile)
 	indexConfig, err := index.NewConfig(config.IndexesFile)
 	if err != nil {

@@ -79,7 +79,6 @@ func NewArtifactFollowCmd(ctx context.Context, opt *options.CommonOptions) *cobr
 		Use:   "follow [ref1 [ref2 ...]] [flags]",
 		Short: "Install a list of artifacts and continuously checks if there are updates",
 		Long:  longFollow,
-		Args:  cobra.MinimumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			o.Printer.CheckErr(o.RunArtifactFollow(ctx, args))
 		},
@@ -99,6 +98,14 @@ func NewArtifactFollowCmd(ctx context.Context, opt *options.CommonOptions) *cobr
 
 // RunArtifactFollow executes the business logic for the artifact follow command.
 func (o *artifactFollowOptions) RunArtifactFollow(ctx context.Context, args []string) error {
+	if len(args) == 0 {
+		configuredFollower, err := config.Follower()
+		if err != nil {
+			return fmt.Errorf("unable to retrieved the configured follower: %w", err)
+		}
+		args = configuredFollower.Artifacts
+	}
+
 	o.Printer.Info.Printfln("Reading all configured index files from %q", config.IndexesFile)
 	indexConfig, err := index.NewConfig(config.IndexesFile)
 	if err != nil {
