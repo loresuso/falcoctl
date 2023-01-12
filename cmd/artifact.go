@@ -16,10 +16,9 @@ package cmd
 
 import (
 	"context"
-	"github.com/falcosecurity/falcoctl/internal/registry/oauth"
-	"golang.org/x/oauth2/clientcredentials"
 
 	"github.com/spf13/cobra"
+	"golang.org/x/oauth2/clientcredentials"
 	"oras.land/oras-go/v2/registry/remote/auth"
 
 	"github.com/falcosecurity/falcoctl/internal/artifact/follow"
@@ -30,6 +29,7 @@ import (
 	"github.com/falcosecurity/falcoctl/internal/config"
 	"github.com/falcosecurity/falcoctl/internal/index/add"
 	"github.com/falcosecurity/falcoctl/internal/registry/login"
+	"github.com/falcosecurity/falcoctl/internal/registry/oauth"
 	commonoptions "github.com/falcosecurity/falcoctl/pkg/options"
 )
 
@@ -79,9 +79,9 @@ func NewArtifactCmd(ctx context.Context, opt *commonoptions.CommonOptions) *cobr
 				oauthMgr := oauth.OauthOptions{
 					CommonOptions: opt,
 					Conf: clientcredentials.Config{
-						ClientID:       auth.ClientID,
-						ClientSecret:   auth.ClientSecret,
-						TokenURL:       auth.TokenURL,
+						ClientID:     auth.ClientID,
+						ClientSecret: auth.ClientSecret,
+						TokenURL:     auth.TokenURL,
 					},
 				}
 				opt.Printer.CheckErr(oauthMgr.RunOauth(ctx, []string{auth.Registry}))

@@ -52,7 +52,9 @@ const (
 	// Default values is set every 24 hours.
 	FollowResync = time.Hour * 24
 
-	oauthAuthKey = "oauthauths"
+	oauthAuthsKey = "oauthauths"
+	basicAuthsKey = "basicauths"
+	indexesKey    = "indexes"
 )
 
 // Index represents a configured index.
@@ -79,14 +81,6 @@ type BasicAuth struct {
 // Follow represents the follower configuration.
 type Follow struct {
 	Every string `mapstructure:"every"`
-}
-
-// Config represents the global config file for falcoctl.
-type Config struct {
-	Indexes    []Index     `mapstructure:"indexes"`
-	OauthAuths []OauthAuth `mapstructure:"OauthAuths"`
-	BasicAuths []BasicAuth `mapstructure:"basicAuths"`
-	Follow     Follow      `mapstructure:"follow"`
 }
 
 func init() {
@@ -125,9 +119,9 @@ func Load(path string) error {
 }
 
 func Indexes() ([]Index, error) {
-	indexes := []Index{}
+	var indexes []Index
 
-	if err := viper.UnmarshalKey("indexes", &indexes, viper.DecodeHook(indexListHookFunc())); err != nil {
+	if err := viper.UnmarshalKey(indexesKey, &indexes, viper.DecodeHook(indexListHookFunc())); err != nil {
 		return nil, fmt.Errorf("unable to get indexes: %w", err)
 	}
 
@@ -161,11 +155,11 @@ func indexListHookFunc() mapstructure.DecodeHookFuncType {
 			}
 			return indexes, nil
 		case reflect.Slice:
-			config := Config{}
-			if err := mapstructure.WeakDecode(data, &config.Indexes); err != nil {
+			var indexes []Index
+			if err := mapstructure.WeakDecode(data, &indexes); err != nil {
 				return err, nil
 			}
-			return config.Indexes, nil
+			return indexes, nil
 		default:
 			return nil, nil
 		}
@@ -173,9 +167,9 @@ func indexListHookFunc() mapstructure.DecodeHookFuncType {
 }
 
 func BasicAuths() ([]BasicAuth, error) {
-	auths := []BasicAuth{}
+	var auths []BasicAuth
 
-	if err := viper.UnmarshalKey("basicAuths", &auths, viper.DecodeHook(basicAuthListHookFunc())); err != nil {
+	if err := viper.UnmarshalKey(basicAuthsKey, &auths, viper.DecodeHook(basicAuthListHookFunc())); err != nil {
 		return nil, fmt.Errorf("unable to get basicAuths: %w", err)
 	}
 
@@ -210,22 +204,21 @@ func basicAuthListHookFunc() mapstructure.DecodeHookFuncType {
 			}
 			return auths, nil
 		case reflect.Slice:
-			config := Config{}
-			if err := mapstructure.WeakDecode(data, &config.BasicAuths); err != nil {
+			var auths []BasicAuth
+			if err := mapstructure.WeakDecode(data, &auths); err != nil {
 				return err, nil
 			}
-			return config.BasicAuths, nil
+			return auths, nil
 		default:
 			return nil, nil
 		}
 	}
 }
 
-
 func OauthAuths() ([]OauthAuth, error) {
-	auths := []OauthAuth{}
+	var auths []OauthAuth
 
-	if err := viper.UnmarshalKey(oauthAuthKey, &auths, viper.DecodeHook(oathAuthListHookFunc())); err != nil {
+	if err := viper.UnmarshalKey(oauthAuthsKey, &auths, viper.DecodeHook(oathAuthListHookFunc())); err != nil {
 		return nil, fmt.Errorf("unable to get oauthAuths: %w", err)
 	}
 
@@ -235,7 +228,7 @@ func OauthAuths() ([]OauthAuth, error) {
 // oauthAuthListHookFunc returns a DecodeHookFunc that converts
 // strings to string slices, when the target type is DotSeparatedStringList.
 // when passed as env should be in the following format:
-//"registry,clientID,clientSecret,tokenURL;registry1,clientID1,clientSecret1,tokenURL1".
+// "registry,clientID,clientSecret,tokenURL;registry1,clientID1,clientSecret1,tokenURL1".
 func oathAuthListHookFunc() mapstructure.DecodeHookFuncType {
 	return func(f reflect.Type, t reflect.Type, data interface{}) (interface{}, error) {
 		if f.Kind() != reflect.String && f.Kind() != reflect.Slice {
