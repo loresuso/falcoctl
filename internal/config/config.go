@@ -49,6 +49,8 @@ const (
 	// FollowResync time interval how often it checks for newer version of the artifact.
 	// Default values is set every 24 hours.
 	FollowResync = time.Hour * 24
+
+	oauthAuthKey = "oauthauths"
 )
 
 // Index represents a configured index.
@@ -131,6 +133,7 @@ func Indexes() ([]Index, error) {
 
 // indexListHookFunc returns a DecodeHookFunc that converts
 // strings to string slices, when the target type is DotSeparatedStringList.
+// when passed as env should be in the following format:
 // "falcosecurity,https://falcosecurity.github.io/falcoctl/index.yaml;myindex,url"
 func indexListHookFunc() mapstructure.DecodeHookFuncType {
 	return func(f reflect.Type, t reflect.Type, data interface{}) (interface{}, error) {
@@ -178,6 +181,7 @@ func BasicAuths() ([]BasicAuth, error) {
 
 // basicAuthListHookFunc returns a DecodeHookFunc that converts
 // strings to string slices, when the target type is DotSeparatedStringList.
+// when passed as env should be in the following format:
 // "registry,username,password;registry1,username1,password1".
 func basicAuthListHookFunc() mapstructure.DecodeHookFuncType {
 	return func(f reflect.Type, t reflect.Type, data interface{}) (interface{}, error) {
@@ -208,6 +212,57 @@ func basicAuthListHookFunc() mapstructure.DecodeHookFuncType {
 				return err, nil
 			}
 			return config.BasicAuths, nil
+		default:
+			return nil, nil
+		}
+	}
+}
+
+
+func OauthAuths() ([]OauthAuth, error) {
+	auths := []OauthAuth{}
+
+	if err := viper.UnmarshalKey(oauthAuthKey, &auths, viper.DecodeHook(oathAuthListHookFunc())); err != nil {
+		return nil, fmt.Errorf("unable to get oauthAuths: %w", err)
+	}
+
+	return auths, nil
+}
+
+// oauthAuthListHookFunc returns a DecodeHookFunc that converts
+// strings to string slices, when the target type is DotSeparatedStringList.
+// when passed as env should be in the following format:
+//"registry,clientID,clientSecret,tokenURL;registry1,clientID1,clientSecret1,tokenURL1".
+func oathAuthListHookFunc() mapstructure.DecodeHookFuncType {
+	return func(f reflect.Type, t reflect.Type, data interface{}) (interface{}, error) {
+		if f.Kind() != reflect.String && f.Kind() != reflect.Slice {
+			return data, nil
+		}
+
+		if t != reflect.TypeOf([]OauthAuth{}) {
+			return data, fmt.Errorf("unable to decode data since destination variable is not of type %T", []OauthAuth{})
+		}
+
+		switch f.Kind() {
+		case reflect.String:
+			tokens := strings.Split(data.(string), ";")
+			auths := make([]OauthAuth, len(tokens))
+			for i, token := range tokens {
+				values := strings.Split(token, ",")
+				auths[i] = OauthAuth{
+					Registry:     values[0],
+					ClientID:     values[1],
+					ClientSecret: values[2],
+					TokenURL:     values[3],
+				}
+			}
+			return auths, nil
+		case reflect.Slice:
+			var auths []OauthAuth
+			if err := mapstructure.WeakDecode(data, &auths); err != nil {
+				return err, nil
+			}
+			return auths, nil
 		default:
 			return nil, nil
 		}

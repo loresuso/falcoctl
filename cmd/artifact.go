@@ -16,7 +16,8 @@ package cmd
 
 import (
 	"context"
-	"fmt"
+	"github.com/falcosecurity/falcoctl/internal/registry/oauth"
+	"golang.org/x/oauth2/clientcredentials"
 
 	"github.com/spf13/cobra"
 	"oras.land/oras-go/v2/registry/remote/auth"
@@ -71,29 +72,20 @@ func NewArtifactCmd(ctx context.Context, opt *commonoptions.CommonOptions) *cobr
 
 				opt.Printer.CheckErr(login.DoLogin(ctx, basicAuth.Registry, cred))
 			}
-			/*
 
-				for _, auth := range opt.Config.OauthAuth {
-					oauthMgr := oauth.OauthOptions{
-						CommonOptions: opt,
-						Conf: clientcredentials.Config{
-							ClientID:       auth.ClientID,
-							ClientSecret:   auth.ClientSecret,
-							TokenURL:       auth.TokenURL,
-						},
-					}
-					opt.Printer.CheckErr(oauthMgr.RunOauth(ctx))
+			oauthAuths, err := config.OauthAuths()
+			opt.Printer.CheckErr(err)
+			for _, auth := range oauthAuths {
+				oauthMgr := oauth.OauthOptions{
+					CommonOptions: opt,
+					Conf: clientcredentials.Config{
+						ClientID:       auth.ClientID,
+						ClientSecret:   auth.ClientSecret,
+						TokenURL:       auth.TokenURL,
+					},
 				}
-
-				for _, ind := range opt.Config.Indexes{
-					indexMgr := add.IndexAddOptions{
-						CommonOptions: opt,
-					}
-					opt.Printer.CheckErr(indexMgr.Validate([]string{ind.Name, ind.URL}))
-					opt.Printer.CheckErr(indexMgr.RunIndexAdd(ctx, []string{ind.Name, ind.URL}))
-				}*/
-
-			fmt.Println("heyyyyyyyy")
+				opt.Printer.CheckErr(oauthMgr.RunOauth(ctx, []string{auth.Registry}))
+			}
 		},
 	}
 
