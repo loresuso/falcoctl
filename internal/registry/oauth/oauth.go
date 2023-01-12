@@ -96,6 +96,30 @@ func (o *OauthOptions) RunOauth(ctx context.Context, args []string) error {
 		return fmt.Errorf("unable to save token: %w", err)
 	}
 
+	currentAuths, err := config.OauthAuths()
+	if err != nil {
+		return fmt.Errorf("unable to get oauthAuths from viper: %w", err)
+	}
+
+	for _, a := range currentAuths {
+		if a.Registry == reg {
+			o.Printer.Verbosef("credentials for registry %q already exists in the config file %q", reg, config.ConfigPath)
+			return nil
+		}
+	}
+
+	currentAuths = append(currentAuths, config.OauthAuth{
+		Registry:     reg,
+		ClientSecret: o.Conf.ClientSecret,
+		ClientID:     o.Conf.ClientID,
+		TokenURL:     o.Conf.TokenURL,
+	})
+
+	if err := config.UpdateConfigFile(config.OauthAuthsKey, currentAuths); err != nil {
+		return fmt.Errorf("unable to update oauth auths credential list in the config file %q: %w", config.ConfigPath, err)
+	}
+	o.Printer.Verbosef("credentials added to config file %q", config.ConfigPath)
+
 	o.Printer.Success.Printfln("client credentials correctly saved in %q", config.ClientCredentialsFile)
 
 	return nil
