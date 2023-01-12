@@ -64,7 +64,7 @@ func (o *artifactInfoOptions) RunArtifactInfo(ctx context.Context, args []string
 		return err
 	}
 
-	mergedIndexes, err := utils.Indexes(indexConfig, config.FalcoctlPath)
+	mergedIndexes, err := utils.Indexes(indexConfig, config.IndexesDir)
 	if err != nil {
 		return err
 	}

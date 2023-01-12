@@ -72,7 +72,7 @@ func (o *artifactInstallOptions) RunArtifactInstall(ctx context.Context, args []
 		return err
 	}
 
-	mergedIndexes, err := utils.Indexes(indexConfig, config.FalcoctlPath)
+	mergedIndexes, err := utils.Indexes(indexConfig, config.IndexesDir)
 	if err != nil {
 		return err
 	}

@@ -33,6 +33,8 @@ var (
 	FalcoctlPath string
 	// IndexesFile name of the file where the indexes info is stored. It lives under FalcoctlPath.
 	IndexesFile string
+	// IndexesDir is where the actual indexes are stored. It is a directory that lives under FalcoctlPath.
+	IndexesDir string
 	// ClientCredentialsFile name of the file where oauth client credentials are stored. It lives under FalcoctlPath.
 	ClientCredentialsFile string
 )
@@ -91,6 +93,7 @@ func init() {
 	ConfigDir = filepath.Join(homedir.Get(), ".config")
 	FalcoctlPath = filepath.Join(ConfigDir, "falcoctl")
 	IndexesFile = filepath.Join(FalcoctlPath, "indexes.yaml")
+	IndexesDir = filepath.Join(FalcoctlPath, "indexes")
 	ClientCredentialsFile = filepath.Join(FalcoctlPath, "clientcredentials.json")
 }
 

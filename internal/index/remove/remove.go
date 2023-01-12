@@ -76,7 +76,7 @@ func NewIndexRemoveCmd(ctx context.Context, opt *options.CommonOptions) *cobra.C
 func (o *indexRemoveOptions) RunIndexRemove(ctx context.Context, args []string) error {
 	for _, name := range args {
 		nameYaml := fmt.Sprintf("%s%s", name, ".yaml")
-		indexFile := filepath.Join(config.FalcoctlPath, nameYaml)
+		indexFile := filepath.Join(config.IndexesDir, nameYaml)
 		if err := o.indexConfig.Remove(name); err != nil {
 			return err
 		}

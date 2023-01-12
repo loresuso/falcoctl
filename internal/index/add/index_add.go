@@ -41,6 +41,13 @@ func (o *IndexAddOptions) Validate(args []string) error {
 			return err
 		}
 	}
+
+	if _, err := os.Stat(config.IndexesDir); os.IsNotExist(err) {
+		err = os.Mkdir(config.IndexesDir, 0o700)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -72,7 +79,7 @@ func (o *IndexAddOptions) RunIndexAdd(ctx context.Context, args []string) error 
 	nameYaml := fmt.Sprintf("%s%s", name, ".yaml")
 	url := args[1]
 
-	indexFile := filepath.Join(config.FalcoctlPath, nameYaml)
+	indexFile := filepath.Join(config.IndexesDir, nameYaml)
 
 	indexConfig, err := index.NewConfig(config.IndexesFile)
 	if err != nil {
