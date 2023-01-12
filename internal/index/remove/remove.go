@@ -74,6 +74,11 @@ func NewIndexRemoveCmd(ctx context.Context, opt *options.CommonOptions) *cobra.C
 }
 
 func (o *indexRemoveOptions) RunIndexRemove(ctx context.Context, args []string) error {
+	currentIndexes, err := config.Indexes()
+	if err != nil {
+		return fmt.Errorf("unable to get indexes from viper: %w", err)
+	}
+
 	for _, name := range args {
 		nameYaml := fmt.Sprintf("%s%s", name, ".yaml")
 		indexFile := filepath.Join(config.IndexesDir, nameYaml)
@@ -84,10 +89,21 @@ func (o *indexRemoveOptions) RunIndexRemove(ctx context.Context, args []string) 
 		if err := os.Remove(indexFile); err != nil {
 			return err
 		}
+
+		for i, ind := range currentIndexes {
+			if ind.Name == name {
+				o.Printer.Verbosef("index with name %q exists in the config file %q, removing", name, config.ConfigPath)
+				currentIndexes = append(currentIndexes[:i], currentIndexes[i+1:]...)
+			}
+		}
 	}
 
 	if err := o.indexConfig.Write(config.IndexesFile); err != nil {
 		return err
+	}
+
+	if err := config.UpdateConfigFile(config.IndexesKey, currentIndexes); err != nil {
+		return fmt.Errorf("unable to update indexes list in the config file %q: %w", config.ConfigPath, err)
 	}
 
 	return nil

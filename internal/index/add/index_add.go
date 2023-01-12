@@ -78,7 +78,6 @@ func (o *IndexAddOptions) RunIndexAdd(ctx context.Context, args []string) error 
 	name := args[0]
 	nameYaml := fmt.Sprintf("%s%s", name, ".yaml")
 	url := args[1]
-
 	indexFile := filepath.Join(config.IndexesDir, nameYaml)
 
 	indexConfig, err := index.NewConfig(config.IndexesFile)
@@ -115,6 +114,27 @@ func (o *IndexAddOptions) RunIndexAdd(ctx context.Context, args []string) error 
 
 	if err := indexConfig.Write(config.IndexesFile); err != nil {
 		return err
+	}
+
+	currentIndexes, err := config.Indexes()
+	if err != nil {
+		return fmt.Errorf("unable to get indexes from viper: %w", err)
+	}
+
+	for _, i := range currentIndexes {
+		if i.Name == name {
+			o.Printer.Verbosef("index with name %q already exists in the config file %q", name, config.ConfigPath)
+			return nil
+		}
+	}
+
+	currentIndexes = append(currentIndexes, config.Index{
+		Name: name,
+		URL:  url,
+	})
+
+	if err := config.UpdateConfigFile(config.IndexesKey, currentIndexes); err != nil {
+		return fmt.Errorf("unable to update indexes list in the config file %q: %w", config.ConfigPath, err)
 	}
 
 	return nil

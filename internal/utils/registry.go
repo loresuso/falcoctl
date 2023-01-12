@@ -31,8 +31,8 @@ import (
 )
 
 // PullerForRegistry returns a new ocipuller.Puller ready to be used for the given registry.
-func PullerForRegistry(ctx context.Context, registry string, plainHTTP bool, printer *output.Printer) (*ocipuller.Puller, error) {
-	client, err := ClientForRegistry(ctx, registry, plainHTTP, printer)
+func PullerForRegistry(ctx context.Context, reg string, plainHTTP bool, printer *output.Printer) (*ocipuller.Puller, error) {
+	client, err := ClientForRegistry(ctx, reg, plainHTTP, printer)
 	if err != nil {
 		return nil, err
 	}
@@ -41,8 +41,8 @@ func PullerForRegistry(ctx context.Context, registry string, plainHTTP bool, pri
 }
 
 // PusherForRegistry returns ane ocipusher.Pusher ready to be used for the given registry.
-func PusherForRegistry(ctx context.Context, plainHTTP bool, registry string, printer *output.Printer) (*ocipusher.Pusher, error) {
-	client, err := ClientForRegistry(ctx, registry, plainHTTP, printer)
+func PusherForRegistry(ctx context.Context, plainHTTP bool, reg string, printer *output.Printer) (*ocipusher.Pusher, error) {
+	client, err := ClientForRegistry(ctx, reg, plainHTTP, printer)
 	if err != nil {
 		return nil, err
 	}

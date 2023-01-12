@@ -54,7 +54,7 @@ const (
 
 	oauthAuthsKey = "oauthauths"
 	basicAuthsKey = "basicauths"
-	indexesKey    = "indexes"
+	IndexesKey    = "indexes"
 )
 
 // Index represents a configured index.
@@ -121,11 +121,36 @@ func Load(path string) error {
 func Indexes() ([]Index, error) {
 	var indexes []Index
 
-	if err := viper.UnmarshalKey(indexesKey, &indexes, viper.DecodeHook(indexListHookFunc())); err != nil {
+	if err := viper.UnmarshalKey(IndexesKey, &indexes, viper.DecodeHook(indexListHookFunc())); err != nil {
 		return nil, fmt.Errorf("unable to get indexes: %w", err)
 	}
 
 	return indexes, nil
+}
+
+func UpdateConfigFile(key string, value interface{}) error {
+	v := viper.New()
+	v.SetConfigName("config")
+
+	absolutePath, err := filepath.Abs(ConfigPath)
+	if err != nil {
+		return err
+	}
+
+	v.AddConfigPath(filepath.Dir(absolutePath))
+	v.SetConfigType("yaml")
+
+	if err := v.ReadInConfig(); err != nil {
+		return fmt.Errorf("config: error reading config file: %w", err)
+	}
+
+	v.Set(key, value)
+
+	if err := v.WriteConfig(); err != nil {
+		return fmt.Errorf("unable to set key %q to config file: %w", IndexesKey, err)
+	}
+
+	return nil
 }
 
 // indexListHookFunc returns a DecodeHookFunc that converts
