@@ -68,8 +68,9 @@ func (o *artifactInstallOptions) RunArtifactInstall(ctx context.Context, args []
 	if len(args) == 0 {
 		configuredInstaller, err := config.Installer()
 		if err != nil {
-			return fmt.Errorf("unable to retrieved the configured follower: %w", err)
+			o.Printer.CheckErr(fmt.Errorf("unable to retrieved the configured installer: %w", err))
 		}
+
 		args = configuredInstaller.Artifacts
 	}
 

@@ -84,8 +84,8 @@ type BasicAuth struct {
 
 // Follow represents the follower configuration.
 type Follow struct {
-	Every     string   `mapstructure:"every"`
-	Artifacts []string `mapstructure:"artifacts"`
+	Every     time.Duration `mapstructure:"every"`
+	Artifacts []string      `mapstructure:"artifacts"`
 }
 
 // Install represents the installer configuration
@@ -284,7 +284,7 @@ func Follower() (Follow, error) {
 	}
 
 	return Follow{
-		Every:     viper.GetString(FollowerEveryKey),
+		Every:     viper.GetDuration(FollowerEveryKey),
 		Artifacts: artifacts,
 	}, nil
 }

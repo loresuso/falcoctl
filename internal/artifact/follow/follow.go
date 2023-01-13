@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 
 	"github.com/falcosecurity/falcoctl/internal/config"
 	"github.com/falcosecurity/falcoctl/internal/follower"
@@ -79,6 +80,14 @@ func NewArtifactFollowCmd(ctx context.Context, opt *options.CommonOptions) *cobr
 		Use:   "follow [ref1 [ref2 ...]] [flags]",
 		Short: "Install a list of artifacts and continuously checks if there are updates",
 		Long:  longFollow,
+		PreRun: func(cmd *cobra.Command, args []string) {
+			// Override "every" flag
+			f := cmd.Flags().Lookup("every")
+			if !f.Changed && viper.IsSet(config.FollowerEveryKey) {
+				val := viper.Get(config.FollowerEveryKey)
+				cmd.Flags().Set(f.Name, fmt.Sprintf("%v", val))
+			}
+		},
 		Run: func(cmd *cobra.Command, args []string) {
 			o.Printer.CheckErr(o.RunArtifactFollow(ctx, args))
 		},
@@ -98,10 +107,16 @@ func NewArtifactFollowCmd(ctx context.Context, opt *options.CommonOptions) *cobr
 
 // RunArtifactFollow executes the business logic for the artifact follow command.
 func (o *artifactFollowOptions) RunArtifactFollow(ctx context.Context, args []string) error {
+	// Retrieve configuration for follower
+	configuredFollower, err := config.Follower()
+	if err != nil {
+		o.Printer.CheckErr(fmt.Errorf("unable to retrieved the configured follower: %w", err))
+	}
+
+	// Set args as configured if no arg was passed
 	if len(args) == 0 {
-		configuredFollower, err := config.Follower()
-		if err != nil {
-			return fmt.Errorf("unable to retrieved the configured follower: %w", err)
+		if len(configuredFollower.Artifacts) == 0 {
+			return fmt.Errorf("no artifacts to follow. Please configure artifacts or pass them as arguments to this command.")
 		}
 		args = configuredFollower.Artifacts
 	}
@@ -127,7 +142,7 @@ func (o *artifactFollowOptions) RunArtifactFollow(ctx context.Context, args []st
 	// For each artifact create a follower.
 	var followers = make(map[string]*follower.Follower, 0)
 	for _, a := range args {
-		o.Printer.Info.Printfln("Creating follower for %q", a)
+		o.Printer.Info.Printfln("Creating follower for %q, check every %s", a, o.every.String())
 		ref, err := utils.ParseReference(mergedIndexes, a)
 		if err != nil {
 			return fmt.Errorf("unable to parse artifact reference for %q: %w", a, err)
