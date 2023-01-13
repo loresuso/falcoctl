@@ -21,7 +21,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blang/semver"
 	"github.com/docker/docker/pkg/homedir"
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
@@ -331,4 +330,8 @@ func UpdateConfigFile(key string, value interface{}) error {
 	return nil
 }
 
-type FalcoVersions map[string]semver.Version
+// FalcoVersions represent the map for Falco requirements
+// In general, it should be a map[string]semver.Version, but given
+// that we have fields like engine_version that are only numbers, we shoud be
+// as muche generic as possible.
+type FalcoVersions map[string]interface{}

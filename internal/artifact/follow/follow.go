@@ -21,6 +21,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"reflect"
 	"sync"
 	"time"
 
@@ -244,18 +245,25 @@ func (o *artifactFollowOptions) retrieveFalcoVersions() error {
 		return fmt.Errorf("unable to read response body: %w", err)
 	}
 
-	var rawMap map[string]string
-	err = json.Unmarshal(data, &rawMap)
+	err = json.Unmarshal(data, &o.versions)
 	if err != nil {
 		return fmt.Errorf("error unmarshalling: %w", err)
 	}
 
-	o.versions = make(config.FalcoVersions)
-	for k, v := range rawMap {
-		o.versions[k], err = semver.Parse(v)
-		if err != nil {
-			return fmt.Errorf("unable to parse Falco version %q: %w", v, err)
+	for k, v := range o.versions {
+		switch reflect.TypeOf(v).Kind() {
+		case reflect.String:
+			// In this case, we treat the input as semver and we try to parse it
+			o.versions[k], err = semver.Parse(v.(string))
+			if err != nil {
+				return fmt.Errorf("unable to parse Falco version %q: %w", v, err)
+			}
+		case reflect.Int:
+			o.versions[k] = v.(int)
+		default:
+			return fmt.Errorf("got unexpected type while retrieving Falco versions: %s, %v", k, v)
 		}
+
 	}
 
 	fmt.Println(o.versions)
