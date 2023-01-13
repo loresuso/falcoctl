@@ -37,6 +37,10 @@ var (
 	IndexesDir string
 	// ClientCredentialsFile name of the file where oauth client credentials are stored. It lives under FalcoctlPath.
 	ClientCredentialsFile string
+	// DefaultIndex is the default index for the falcosecurity organization
+	DefaultIndex Index
+	// DefaultFollower represents the default following options
+	DefaultFollower Follow
 )
 
 const (
@@ -101,6 +105,15 @@ func init() {
 	IndexesFile = filepath.Join(FalcoctlPath, "indexes.yaml")
 	IndexesDir = filepath.Join(FalcoctlPath, "indexes")
 	ClientCredentialsFile = filepath.Join(FalcoctlPath, "clientcredentials.json")
+	DefaultIndex = Index{
+		Name: "falcosecurity",
+		URL:  "https://falcosecurity.github.io/falcoctl/index.yaml",
+	}
+	DefaultFollower = Follow{
+		Every:         time.Hour * 24,
+		Artifacts:     []string{"falco-rules:1", "application-rules:1"},
+		FalcoVersions: "http://localhost:8765/versions",
+	}
 }
 
 func Load(path string) error {
@@ -114,6 +127,24 @@ func Load(path string) error {
 	viper.AddConfigPath(filepath.Dir(absolutePath))
 	viper.SetConfigType("yaml")
 
+	// Set default index
+	viper.SetDefault(IndexesKey, []Index{DefaultIndex})
+
+	// Set default follower options
+	viper.SetDefault(FollowerEveryKey, DefaultFollower.Every)
+	viper.SetDefault(FollowerArtifactsKey, DefaultFollower.Artifacts)
+	viper.SetDefault(FollowerFalcoVersionsKey, DefaultFollower.FalcoVersions)
+
+	err = viper.ReadInConfig()
+	if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+		// If the config is not found, we create the file with the
+		// already set up default values
+		if err = viper.WriteConfigAs(path); err != nil {
+			return fmt.Errorf("unable to write config file: %w", err)
+		}
+	} else if err != nil {
+		return fmt.Errorf("unable to read config file: %w", err)
+	}
 	if err := viper.ReadInConfig(); err != nil {
 		return fmt.Errorf("config: error reading config file: %w", err)
 	}
