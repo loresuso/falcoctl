@@ -53,12 +53,13 @@ const (
 	FollowResync = time.Hour * 24
 
 	// Viper configuration keys.
-	OauthAuthsKey         = "oauthauths"
-	BasicAuthsKey         = "basicauths"
-	IndexesKey            = "indexes"
-	FollowerEveryKey      = "follower.every"
-	FollowerArtifactsKey  = "follower.artifacts"
-	InstallerArtifactsKey = "installer.artifacts"
+	OauthAuthsKey            = "oauthauths"
+	BasicAuthsKey            = "basicauths"
+	IndexesKey               = "indexes"
+	FollowerEveryKey         = "follower.every"
+	FollowerArtifactsKey     = "follower.artifacts"
+	FollowerFalcoVersionsKey = "follower.falcoversions"
+	InstallerArtifactsKey    = "installer.artifacts"
 )
 
 // Index represents a configured index.
@@ -84,8 +85,9 @@ type BasicAuth struct {
 
 // Follow represents the follower configuration.
 type Follow struct {
-	Every     time.Duration `mapstructure:"every"`
-	Artifacts []string      `mapstructure:"artifacts"`
+	Every         time.Duration `mapstructure:"every"`
+	Artifacts     []string      `mapstructure:"artifacts"`
+	FalcoVersions string        `mapstructure:"falcoVersions"`
 }
 
 // Install represents the installer configuration
@@ -284,8 +286,9 @@ func Follower() (Follow, error) {
 	}
 
 	return Follow{
-		Every:     viper.GetDuration(FollowerEveryKey),
-		Artifacts: artifacts,
+		Every:         viper.GetDuration(FollowerEveryKey),
+		Artifacts:     artifacts,
+		FalcoVersions: viper.GetString(FollowerFalcoVersionsKey),
 	}, nil
 }
 
@@ -325,4 +328,9 @@ func UpdateConfigFile(key string, value interface{}) error {
 	}
 
 	return nil
+}
+
+type FalcoVersions struct {
+	PluginApi string `json:"plugin_api_version"`
+	Engine    string `json:"engine_version"`
 }

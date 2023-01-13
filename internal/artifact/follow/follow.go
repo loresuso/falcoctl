@@ -16,7 +16,11 @@ package follow
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
+	"net/url"
 	"sync"
 	"time"
 
@@ -65,6 +69,8 @@ type artifactFollowOptions struct {
 	pluginsDir    string
 	workingDir    string
 	every         time.Duration
+	falcoVersions string
+	versions      config.FalcoVersions
 	closeChan     chan bool
 }
 
@@ -81,12 +87,30 @@ func NewArtifactFollowCmd(ctx context.Context, opt *options.CommonOptions) *cobr
 		Short: "Install a list of artifacts and continuously checks if there are updates",
 		Long:  longFollow,
 		PreRun: func(cmd *cobra.Command, args []string) {
-			// Override "every" flag
+			// Override "every" flag with viper config if not set by user.
 			f := cmd.Flags().Lookup("every")
+			if f == nil {
+				// should never happen
+				o.Printer.CheckErr(fmt.Errorf("unable to retrieve flag every"))
+			}
 			if !f.Changed && viper.IsSet(config.FollowerEveryKey) {
 				val := viper.Get(config.FollowerEveryKey)
 				cmd.Flags().Set(f.Name, fmt.Sprintf("%v", val))
 			}
+
+			// Override "falco-versions" flag with viper config if not set by user.
+			f = cmd.Flags().Lookup("falco-versions")
+			if f == nil {
+				// should never happen
+				o.Printer.CheckErr(fmt.Errorf("unable to retrieve flag falco-versions"))
+			}
+			if !f.Changed && viper.IsSet(config.FollowerFalcoVersionsKey) {
+				val := viper.Get(config.FollowerFalcoVersionsKey)
+				cmd.Flags().Set(f.Name, fmt.Sprintf("%v", val))
+			}
+
+			err := o.retrieveFalcoVersions()
+			o.Printer.CheckErr(err)
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			o.Printer.CheckErr(o.RunArtifactFollow(ctx, args))
@@ -102,6 +126,8 @@ func NewArtifactFollowCmd(ctx context.Context, opt *options.CommonOptions) *cobr
 	cmd.Flags().StringVarP(&o.pluginsDir, "plugins-dir", "", config.PluginsDir,
 		"Directory where to install plugins")
 	cmd.Flags().StringVar(&o.workingDir, "working-dir", "", "Directory where to save temporary files")
+	cmd.Flags().StringVar(&o.falcoVersions, "falco-versions", "http://localhost:8765/versions",
+		"Where to retrieve versions, it can be either an URL or a path to a file")
 	return cmd
 }
 
@@ -158,6 +184,7 @@ func (o *artifactFollowOptions) RunArtifactFollow(ctx context.Context, args []st
 			Verbose:           o.IsVerbose(),
 			CloseChan:         o.closeChan,
 			WorkingDir:        o.workingDir,
+			FalcoVersions:     &o.versions,
 		}
 		fol, err := follower.New(ctx, ref, o.Printer, cfg)
 		if err != nil {
@@ -194,6 +221,31 @@ func (o *artifactFollowOptions) RunArtifactFollow(ctx context.Context, args []st
 		o.Printer.DefaultText.Printfln("followers correctly stopped.")
 	case <-time.After(timeout):
 		o.Printer.DefaultText.Printfln("Timed out waiting for followers to exit")
+	}
+
+	return nil
+}
+
+func (o *artifactFollowOptions) retrieveFalcoVersions() error {
+	_, err := url.ParseRequestURI(o.falcoVersions)
+	if err != nil {
+		return fmt.Errorf("unable to parse URI: %w", err)
+	}
+
+	resp, err := http.Get(o.falcoVersions)
+	if err != nil {
+		return fmt.Errorf("unable to get versions from URL %q: %w", o.falcoVersions, err)
+	}
+	defer resp.Body.Close()
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("unable to read response body: %w", err)
+	}
+
+	err = json.Unmarshal(data, &o.versions)
+	if err != nil {
+		return fmt.Errorf("error unmarshalling: %w", err)
 	}
 
 	return nil

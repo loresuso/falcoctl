@@ -25,6 +25,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/falcosecurity/falcoctl/internal/config"
 	"github.com/falcosecurity/falcoctl/internal/utils"
 	"github.com/falcosecurity/falcoctl/pkg/oci"
 	ocipuller "github.com/falcosecurity/falcoctl/pkg/oci/puller"
@@ -64,6 +65,9 @@ type Config struct {
 	Verbose bool
 	// WorkingDir directory where to save temporary files.
 	WorkingDir string
+	// FalcoVersions is a struct containing all the required Falco versions that this follower
+	// has to take into account when installing artifacts.
+	FalcoVersions *config.FalcoVersions
 }
 
 // New creates a Follower configured with the passed parameters and ready to be used.
