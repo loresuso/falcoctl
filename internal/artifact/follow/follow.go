@@ -258,10 +258,10 @@ func (o *artifactFollowOptions) retrieveFalcoVersions() error {
 			if err != nil {
 				return fmt.Errorf("unable to parse Falco version %q: %w", v, err)
 			}
-		case reflect.Int:
-			o.versions[k] = v.(int)
+		case reflect.Float64:
+			o.versions[k] = int(v.(float64)) // convert to int
 		default:
-			return fmt.Errorf("got unexpected type while retrieving Falco versions: %s, %v", k, v)
+			return fmt.Errorf("got unexpected type while retrieving Falco versions: %s, %T", k, v)
 		}
 
 	}
