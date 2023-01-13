@@ -25,6 +25,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/blang/semver"
 	"github.com/falcosecurity/falcoctl/internal/config"
 	"github.com/falcosecurity/falcoctl/internal/utils"
 	"github.com/falcosecurity/falcoctl/pkg/oci"
@@ -44,6 +45,7 @@ type Follower struct {
 	*ocipuller.Puller
 	*Config
 	*output.Printer
+	config.FalcoVersions
 }
 
 // Config configuration options for the Follower.
@@ -67,7 +69,7 @@ type Config struct {
 	WorkingDir string
 	// FalcoVersions is a struct containing all the required Falco versions that this follower
 	// has to take into account when installing artifacts.
-	FalcoVersions *config.FalcoVersions
+	FalcoVersions config.FalcoVersions
 }
 
 // New creates a Follower configured with the passed parameters and ready to be used.
@@ -103,12 +105,13 @@ func New(ctx context.Context, ref string, printer *output.Printer, config *Confi
 	customPrinter := printer.WithScope(ref)
 
 	return &Follower{
-		ref:        ref,
-		tag:        tag,
-		workingDir: workingDir,
-		Puller:     puller,
-		Config:     config,
-		Printer:    customPrinter,
+		ref:           ref,
+		tag:           tag,
+		workingDir:    workingDir,
+		Puller:        puller,
+		Config:        config,
+		Printer:       customPrinter,
+		FalcoVersions: config.FalcoVersions,
 	}, nil
 }
 
@@ -150,6 +153,19 @@ func (f *Follower) follow(ctx context.Context) {
 	}
 
 	f.Info.Printfln("found new version under tag %q", f.tag)
+
+	// Pull config layer to check falco versions
+	artifactConfig, err := f.PullConfigLayer(ctx, f.ref)
+	if err != nil {
+		f.Error.Printfln("unable to pull config layer for ref %q: %v", f.ref, err)
+		return
+	}
+
+	err = f.checkRequirements(artifactConfig)
+	if err != nil {
+		f.Error.Printfln("unmet requirements for ref %q: %v", f.ref, err)
+		return
+	}
 
 	f.Verbosef("pulling artifact from remote repository...")
 	// Pull the artifact from the repository.
@@ -249,6 +265,39 @@ func (f *Follower) destinationDir(res *oci.RegistryResult) string {
 		dir = f.RulefilesDir
 	}
 	return dir
+}
+
+func (f *Follower) checkRequirements(artifactConfig *oci.ArtifactConfig) error {
+	// Check if each requirement specified in a config layer meet the needs of the
+	// currently running Falco.
+	for _, requirement := range artifactConfig.Requirements {
+		falcoVer, ok := f.FalcoVersions[requirement.Name]
+		if !ok {
+			return fmt.Errorf("requirement key %q is not a valid key for Falco versions map: %v", requirement.Name, f.FalcoVersions)
+		}
+
+		reqVer, err := semver.Parse(requirement.Version)
+		if err != nil {
+			return fmt.Errorf("config layer is malformed, cannot parse semver for %s:%s", requirement.Name, requirement.Version)
+		}
+
+		// SPECIAL CASE: engine_version
+		// This should be removed in the future once engine version will be a normal semver.
+		if requirement.Name == "engine_version" {
+			if falcoVer.Compare(reqVer) < 0 {
+				return fmt.Errorf("uncompatible versions, Falco: %s, Requirement: %s:%s", falcoVer.String(), requirement.Name, requirement.Version)
+			}
+		} else {
+			// Normal semver check
+			if falcoVer.Major != reqVer.Major {
+				return fmt.Errorf("uncompatible versions, MAJOR mismatch, Falco: %s, Requirement: %s:%s", falcoVer.String(), requirement.Name, requirement.Version)
+			} else if falcoVer.Compare(reqVer) < 0 {
+				return fmt.Errorf("uncompatible versions, MINOR mismatch, Falco: %s, Requirement: %s:%s", falcoVer.String(), requirement.Name, requirement.Version)
+			}
+		}
+	}
+
+	return nil
 }
 
 func (f *Follower) cleanUp() {

@@ -21,6 +21,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/blang/semver"
 	"github.com/docker/docker/pkg/homedir"
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
@@ -330,7 +331,4 @@ func UpdateConfigFile(key string, value interface{}) error {
 	return nil
 }
 
-type FalcoVersions struct {
-	PluginApi string `json:"plugin_api_version"`
-	Engine    string `json:"engine_version"`
-}
+type FalcoVersions map[string]semver.Version

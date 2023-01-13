@@ -24,6 +24,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/blang/semver"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
@@ -184,7 +185,7 @@ func (o *artifactFollowOptions) RunArtifactFollow(ctx context.Context, args []st
 			Verbose:           o.IsVerbose(),
 			CloseChan:         o.closeChan,
 			WorkingDir:        o.workingDir,
-			FalcoVersions:     &o.versions,
+			FalcoVersions:     o.versions,
 		}
 		fol, err := follower.New(ctx, ref, o.Printer, cfg)
 		if err != nil {
@@ -243,10 +244,21 @@ func (o *artifactFollowOptions) retrieveFalcoVersions() error {
 		return fmt.Errorf("unable to read response body: %w", err)
 	}
 
-	err = json.Unmarshal(data, &o.versions)
+	var rawMap map[string]string
+	err = json.Unmarshal(data, &rawMap)
 	if err != nil {
 		return fmt.Errorf("error unmarshalling: %w", err)
 	}
+
+	o.versions = make(config.FalcoVersions)
+	for k, v := range rawMap {
+		o.versions[k], err = semver.Parse(v)
+		if err != nil {
+			return fmt.Errorf("unable to parse Falco version %q: %w", v, err)
+		}
+	}
+
+	fmt.Println(o.versions)
 
 	return nil
 }
