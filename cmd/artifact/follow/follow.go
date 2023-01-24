@@ -26,6 +26,7 @@ import (
 
 	"github.com/robfig/cron/v3"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
 	"github.com/falcosecurity/falcoctl/internal/config"
@@ -91,77 +92,17 @@ func NewArtifactFollowCmd(ctx context.Context, opt *options.CommonOptions) *cobr
 		Short: "Install a list of artifacts and continuously checks if there are updates",
 		Long:  longFollow,
 		PreRun: func(cmd *cobra.Command, args []string) {
-			// Override "every" flag with viper config if not set by user.
-			f := cmd.Flags().Lookup("every")
-			if f == nil {
-				// should never happen
-				o.Printer.CheckErr(fmt.Errorf("unable to retrieve flag every"))
-			} else if !f.Changed && viper.IsSet(config.ArtifactFollowEveryKey) {
-				val := viper.Get(config.ArtifactFollowEveryKey)
-				if err := cmd.Flags().Set(f.Name, fmt.Sprintf("%v", val)); err != nil {
-					o.Printer.CheckErr(fmt.Errorf("unable to overwrite \"every\" flag: %w", err))
-				}
-			}
+			flags := cmd.Flags()
 
-			// Override "cron" flag with viper config if not set by user.
-			f = cmd.Flags().Lookup("cron")
-			if f == nil {
-				// should never happen
-				o.Printer.CheckErr(fmt.Errorf("unable to retrieve flag cron"))
-			} else if !f.Changed && viper.IsSet(config.ArtifactFollowCronKey) {
-				val := viper.Get(config.ArtifactFollowCronKey)
-				if err := cmd.Flags().Set(f.Name, fmt.Sprintf("%v", val)); err != nil {
-					o.Printer.CheckErr(fmt.Errorf("unable to overwrite \"cron\" flag: %w", err))
+			flags.VisitAll(func(flag *pflag.Flag) {
+				f := config.Flag{
+					Flag:      flag,
+					PrefixKey: config.ArtifactFollowPrefixKey,
 				}
-			}
-
-			// Override "falco-versions" flag with viper config if not set by user.
-			f = cmd.Flags().Lookup("falco-versions")
-			if f == nil {
-				// should never happen
-				o.Printer.CheckErr(fmt.Errorf("unable to retrieve flag falco-versions"))
-			} else if !f.Changed && viper.IsSet(config.ArtifactFollowFalcoVersionsKey) {
-				val := viper.Get(config.ArtifactFollowFalcoVersionsKey)
-				if err := cmd.Flags().Set(f.Name, fmt.Sprintf("%v", val)); err != nil {
-					o.Printer.CheckErr(fmt.Errorf("unable to overwrite \"falco-versions\" flag: %w", err))
+				if err := viper.BindFlagValue(f.Name(), f); err != nil {
+					o.Printer.CheckErr(err)
 				}
-			}
-
-			// Override "rulesfiles-dir" flag with viper config if not set by user.
-			f = cmd.Flags().Lookup("rulesfiles-dir")
-			if f == nil {
-				// should never happen
-				o.Printer.CheckErr(fmt.Errorf("unable to retrieve flag rulesfiles-dir"))
-			} else if !f.Changed && viper.IsSet(config.ArtifactFollowRulesfilesDirKey) {
-				val := viper.Get(config.ArtifactFollowRulesfilesDirKey)
-				if err := cmd.Flags().Set(f.Name, fmt.Sprintf("%v", val)); err != nil {
-					o.Printer.CheckErr(fmt.Errorf("unable to overwrite \"rulesfiles-dir\" flag: %w", err))
-				}
-			}
-
-			// Override "plugins-dir" flag with viper config if not set by user.
-			f = cmd.Flags().Lookup("plugins-dir")
-			if f == nil {
-				// should never happen
-				o.Printer.CheckErr(fmt.Errorf("unable to retrieve flag plugins-dir"))
-			} else if !f.Changed && viper.IsSet(config.ArtifactFollowPluginsDirKey) {
-				val := viper.Get(config.ArtifactFollowPluginsDirKey)
-				if err := cmd.Flags().Set(f.Name, fmt.Sprintf("%v", val)); err != nil {
-					o.Printer.CheckErr(fmt.Errorf("unable to overwrite \"plugins-dir\" flag: %w", err))
-				}
-			}
-
-			// Override "tmp-dir" flag with viper config if not set by user.
-			f = cmd.Flags().Lookup("tmp-dir")
-			if f == nil {
-				// should never happen
-				o.Printer.CheckErr(fmt.Errorf("unable to retrieve flag tmp-dir"))
-			} else if !f.Changed && viper.IsSet(config.ArtifactFollowTmpDirKey) {
-				val := viper.Get(config.ArtifactFollowTmpDirKey)
-				if err := cmd.Flags().Set(f.Name, fmt.Sprintf("%v", val)); err != nil {
-					o.Printer.CheckErr(fmt.Errorf("unable to overwrite \"tmp-dir\" flag: %w", err))
-				}
-			}
+			})
 
 			if o.every != 0 && o.cron != "" {
 				o.Printer.CheckErr(fmt.Errorf("can't set both \"cron\" and \"every\" flags"))

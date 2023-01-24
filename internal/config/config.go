@@ -25,6 +25,7 @@ import (
 
 	"github.com/docker/docker/pkg/homedir"
 	"github.com/mitchellh/mapstructure"
+	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
 
@@ -66,26 +67,30 @@ const (
 	RegistryAuthBasicKey = "registry.auth.basic"
 	// IndexesKey is the Viper key for indexes configuration.
 	IndexesKey = "indexes"
+	// ArtifactFollowPrefixKey is the Viper prefix key for artifact follow configuration.
+	ArtifactFollowPrefixKey = "artifact.follow"
 	// ArtifactFollowEveryKey is the Viper key for follower "every" configuration.
-	ArtifactFollowEveryKey = "artifact.follow.every"
+	ArtifactFollowEveryKey = ArtifactFollowPrefixKey + ".every"
 	// ArtifactFollowCronKey is the Viper key for follower "cron" configuration.
-	ArtifactFollowCronKey = "artifact.follow.cron"
+	ArtifactFollowCronKey = ArtifactFollowPrefixKey + ".cron"
 	// ArtifactFollowRefsKey is the Viper key for follower "artifacts" configuration.
-	ArtifactFollowRefsKey = "artifact.follow.refs"
+	ArtifactFollowRefsKey = ArtifactFollowPrefixKey + ".refs"
 	// ArtifactFollowFalcoVersionsKey is the Viper key for follower "falcoVersions" configuration.
-	ArtifactFollowFalcoVersionsKey = "artifact.follow.falcoversions"
+	ArtifactFollowFalcoVersionsKey = ArtifactFollowPrefixKey + ".falcoversions"
 	// ArtifactFollowRulesfilesDirKey is the Viper key for follower "rulesFilesDir" configuration.
-	ArtifactFollowRulesfilesDirKey = "artifact.follow.rulesfilesdir"
+	ArtifactFollowRulesfilesDirKey = ArtifactFollowPrefixKey + ".rulesfilesdir"
 	// ArtifactFollowPluginsDirKey is the Viper key for follower "pluginsDir" configuration.
-	ArtifactFollowPluginsDirKey = "artifact.follow.pluginsdir"
+	ArtifactFollowPluginsDirKey = ArtifactFollowPrefixKey + ".pluginsdir"
 	// ArtifactFollowTmpDirKey is the Viper key for follower "pluginsDir" configuration.
-	ArtifactFollowTmpDirKey = "artifact.follow.tmpdir"
+	ArtifactFollowTmpDirKey = ArtifactFollowPrefixKey + ".tmpdir"
+	// ArtifactInstallPrefixKey is the Viper prefix key for artifact follow configuration.
+	ArtifactInstallPrefixKey = "artifact.install"
 	// ArtifactInstallArtifactsKey is the Viper key for installer "artifacts" configuration.
-	ArtifactInstallArtifactsKey = "artifact.install.refs"
+	ArtifactInstallArtifactsKey = ArtifactInstallPrefixKey + ".refs"
 	// ArtifactInstallRulesfilesDirKey is the Viper key for follower "rulesFilesDir" configuration.
-	ArtifactInstallRulesfilesDirKey = "artifact.install.rulesfilesdir"
+	ArtifactInstallRulesfilesDirKey = ArtifactInstallPrefixKey + ".rulesfilesdir"
 	// ArtifactInstallPluginsDirKey is the Viper key for follower "pluginsDir" configuration.
-	ArtifactInstallPluginsDirKey = "artifact.install.pluginsdir"
+	ArtifactInstallPluginsDirKey = ArtifactInstallPrefixKey + ".pluginsdir"
 )
 
 // Index represents a configured index.
@@ -413,3 +418,35 @@ func UpdateConfigFile(key string, value interface{}, path string) error {
 // that we have fields like engine_version that are only numbers, we shoud be
 // as muche generic as possible.
 type FalcoVersions map[string]string
+
+// Flag implements the viper.FlagValue interface. It can be used to
+// bind pflag.Flag to viper also using nested keys by means of the PrefixKey field.
+type Flag struct {
+	Flag      *pflag.Flag
+	PrefixKey string
+}
+
+// HasChanged returns whether or not the flag was set.
+func (f Flag) HasChanged() bool {
+	return f.Flag.Changed
+}
+
+// Name translates the name of the flag to a viper (possibly nested).
+func (f Flag) Name() string {
+	if f.PrefixKey == "" {
+		return f.Flag.Name
+	}
+
+	res := strings.Join([]string{f.PrefixKey, f.Flag.Name}, ".")
+	return strings.ReplaceAll(res, "-", "")
+}
+
+// ValueString returns the value of the flag as string.
+func (f Flag) ValueString() string {
+	return f.Flag.Value.String()
+}
+
+// ValueString returns the type of the flag.
+func (f Flag) ValueType() string {
+	return f.Flag.Value.Type()
+}
