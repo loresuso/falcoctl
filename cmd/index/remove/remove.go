@@ -17,13 +17,12 @@ package remove
 import (
 	"context"
 	"fmt"
-	"os"
-	"path/filepath"
 
 	"github.com/spf13/cobra"
 
 	"github.com/falcosecurity/falcoctl/internal/config"
 	"github.com/falcosecurity/falcoctl/pkg/index"
+	"github.com/falcosecurity/falcoctl/pkg/index/cache"
 	"github.com/falcosecurity/falcoctl/pkg/options"
 )
 
@@ -33,6 +32,7 @@ type indexRemoveOptions struct {
 }
 
 func (o *indexRemoveOptions) Validate(args []string) error {
+	// TODO: remove once the new index cache mechanism is merged
 	// Check that all the index names are actually stored in the system.
 	var err error
 	o.indexConfig, err = index.NewConfig(config.IndexesFile)
@@ -74,38 +74,21 @@ func NewIndexRemoveCmd(ctx context.Context, opt *options.CommonOptions) *cobra.C
 }
 
 func (o *indexRemoveOptions) RunIndexRemove(ctx context.Context, args []string) error {
-	currentIndexes, err := config.Indexes()
+	var err error
+	indexCache, err := cache.New(ctx, config.IndexesFile, config.IndexesDir)
 	if err != nil {
-		return fmt.Errorf("unable to get indexes from viper: %w", err)
+		return fmt.Errorf("unable to create index cache: %w", err)
 	}
 
 	for _, name := range args {
-		nameYaml := fmt.Sprintf("%s%s", name, ".yaml")
-		indexFile := filepath.Join(config.IndexesDir, nameYaml)
-		if err := o.indexConfig.Remove(name); err != nil {
-			return err
-		}
-
-		if err := os.Remove(indexFile); err != nil {
-			return err
-		}
-
-		for i, ind := range currentIndexes {
-			if ind.Name == name {
-				o.Printer.Verbosef("index with name %q exists in the config file %q, removing", name, config.ConfigPath)
-				currentIndexes = append(currentIndexes[:i], currentIndexes[i+1:]...)
-				break
-			}
+		if err = indexCache.Remove(name); err != nil {
+			return fmt.Errorf("unable to add index: %w", err)
 		}
 	}
 
-	if err := o.indexConfig.Write(config.IndexesFile); err != nil {
-		return err
+	if _, err = indexCache.Write(); err != nil {
+		return fmt.Errorf("unable to write cache to disk: %w", err)
 	}
 
-	if err := config.UpdateConfigFile(config.IndexesKey, currentIndexes, o.ConfigFile); err != nil {
-		return fmt.Errorf("unable to update indexes list in the config file %q: %w", config.ConfigPath, err)
-	}
-
-	return nil
+	return config.RemoveIndexes(args, o.ConfigFile)
 }
