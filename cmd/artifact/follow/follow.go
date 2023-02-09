@@ -106,41 +106,20 @@ func NewArtifactFollowCmd(ctx context.Context, opt *options.CommonOptions) *cobr
 		Short: "Install a list of artifacts and continuously checks if there are updates",
 		Long:  longFollow,
 		PreRun: func(cmd *cobra.Command, args []string) {
-			// Override "every" flag with viper config if not set by user.
+			// Bind "every" flag with viper.
 			f := cmd.Flags().Lookup("every")
-			if f == nil {
-				// should never happen
-				o.Printer.CheckErr(fmt.Errorf("unable to retrieve flag every"))
-			} else if !f.Changed && viper.IsSet(config.ArtifactFollowEveryKey) {
-				val := viper.Get(config.ArtifactFollowEveryKey)
-				if err := cmd.Flags().Set(f.Name, fmt.Sprintf("%v", val)); err != nil {
-					o.Printer.CheckErr(fmt.Errorf("unable to overwrite \"every\" flag: %w", err))
-				}
-			}
+			err := viper.BindPFlag(config.ArtifactFollowEveryKey, f)
+			o.Printer.CheckErr(err)
 
 			// Override "cron" flag with viper config if not set by user.
 			f = cmd.Flags().Lookup("cron")
-			if f == nil {
-				// should never happen
-				o.Printer.CheckErr(fmt.Errorf("unable to retrieve flag cron"))
-			} else if !f.Changed && viper.IsSet(config.ArtifactFollowCronKey) {
-				val := viper.Get(config.ArtifactFollowCronKey)
-				if err := cmd.Flags().Set(f.Name, fmt.Sprintf("%v", val)); err != nil {
-					o.Printer.CheckErr(fmt.Errorf("unable to overwrite \"cron\" flag: %w", err))
-				}
-			}
+			err = viper.BindPFlag(config.ArtifactFollowCronKey, f)
+			o.Printer.CheckErr(err)
 
 			// Override "falco-versions" flag with viper config if not set by user.
 			f = cmd.Flags().Lookup("falco-versions")
-			if f == nil {
-				// should never happen
-				o.Printer.CheckErr(fmt.Errorf("unable to retrieve flag falco-versions"))
-			} else if !f.Changed && viper.IsSet(config.ArtifactFollowFalcoVersionsKey) {
-				val := viper.Get(config.ArtifactFollowFalcoVersionsKey)
-				if err := cmd.Flags().Set(f.Name, fmt.Sprintf("%v", val)); err != nil {
-					o.Printer.CheckErr(fmt.Errorf("unable to overwrite \"falco-versions\" flag: %w", err))
-				}
-			}
+			err = viper.BindPFlag(config.ArtifactFollowFalcoVersionsKey, f)
+			o.Printer.CheckErr(err)
 
 			// Override "rulesfiles-dir" flag with viper config if not set by user.
 			f = cmd.Flags().Lookup("rulesfiles-dir")

@@ -69,10 +69,7 @@ Example - Install "cloudtrail" plugins using a fully qualified reference:
 type artifactInstallOptions struct {
 	*options.CommonOptions
 	*options.RegistryOptions
-
-	pluginsDir   string
 	allowedTypes oci.ArtifactTypeSlice
-	resolveDeps  bool
 }
 
 // NewArtifactInstallCmd returns the artifact install command.
@@ -90,10 +87,6 @@ func NewArtifactInstallCmd(ctx context.Context, opt *options.CommonOptions) *cob
 		PreRun: func(cmd *cobra.Command, args []string) {
 			// Bind "rulesfiles-dir" flag with viper.
 			f := cmd.Flags().Lookup("rulesfiles-dir")
-			if f == nil {
-				// should never happen
-				o.Printer.CheckErr(fmt.Errorf("unable to retrieve flag rulesfiles-dir"))
-			}
 			err := viper.BindPFlag(config.ArtifactInstallRulesfilesDirKey, f)
 			o.Printer.CheckErr(err)
 
@@ -102,12 +95,8 @@ func NewArtifactInstallCmd(ctx context.Context, opt *options.CommonOptions) *cob
 				o.Printer.CheckErr(fmt.Errorf("rulesfiles-dir: %w", err))
 			}
 
-			// Override "plugins-dir" flag with viper config if not set by user.
+			// Bind "plugins-dir" flag with viper.
 			f = cmd.Flags().Lookup("plugins-dir")
-			if f == nil {
-				// should never happen
-				o.Printer.CheckErr(fmt.Errorf("unable to retrieve flag plugins-dir"))
-			}
 			err = viper.BindPFlag(config.ArtifactInstallPluginsDirKey, f)
 			o.Printer.CheckErr(err)
 
@@ -131,16 +120,10 @@ func NewArtifactInstallCmd(ctx context.Context, opt *options.CommonOptions) *cob
 				}
 			}
 
+			// Bind "resolve-deps" flag with viper.
 			f = cmd.Flags().Lookup("resolve-deps")
-			if f == nil {
-				// should never happen
-				o.Printer.CheckErr(fmt.Errorf("unable to retrieve flag resolve-deps"))
-			} else if !f.Changed && viper.IsSet(config.ArtifactInstallResolveDepsKey) {
-				val := viper.Get(config.ArtifactInstallResolveDepsKey)
-				if err := cmd.Flags().Set(f.Name, fmt.Sprintf("%v", val)); err != nil {
-					o.Printer.CheckErr(fmt.Errorf("unable to overwrite \"resolve-deps\" flag: %w", err))
-				}
-			}
+			err = viper.BindPFlag(config.ArtifactInstallResolveDepsKey, f)
+			o.Printer.CheckErr(err)
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			o.Printer.CheckErr(o.RunArtifactInstall(ctx, args))
@@ -158,7 +141,7 @@ It accepts comma separated values or it can be repeated multiple times.
 Examples: 
 	--allowed-types="rulesfile,plugin"
 	--allowed-types=rulesfile --allowed-types=plugin`)
-	cmd.Flags().BoolVar(&o.resolveDeps, "resolve-deps", true,
+	cmd.Flags().Bool("resolve-deps", true,
 		"whether this command should resolve dependencies or not")
 
 	return cmd
@@ -238,7 +221,7 @@ func (o *artifactInstallOptions) RunArtifactInstall(ctx context.Context, args []
 	}
 
 	var refs []string
-	if o.resolveDeps {
+	if viper.GetBool(config.ArtifactInstallResolveDepsKey) {
 		// Solve dependencies
 		o.Printer.Info.Println("Resolving dependencies ...")
 		refs, err = ResolveDeps(resolver, args...)
