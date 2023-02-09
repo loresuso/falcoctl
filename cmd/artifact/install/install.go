@@ -69,10 +69,10 @@ Example - Install "cloudtrail" plugins using a fully qualified reference:
 type artifactInstallOptions struct {
 	*options.CommonOptions
 	*options.RegistryOptions
-	rulesfilesDir string
-	pluginsDir    string
-	allowedTypes  oci.ArtifactTypeSlice
-	resolveDeps   bool
+
+	pluginsDir   string
+	allowedTypes oci.ArtifactTypeSlice
+	resolveDeps  bool
 }
 
 // NewArtifactInstallCmd returns the artifact install command.
@@ -88,19 +88,17 @@ func NewArtifactInstallCmd(ctx context.Context, opt *options.CommonOptions) *cob
 		Short:                 "Install a list of artifacts",
 		Long:                  longInstall,
 		PreRun: func(cmd *cobra.Command, args []string) {
-			// Override "rulesfiles-dir" flag with viper config if not set by user.
+			// Bind "rulesfiles-dir" flag with viper.
 			f := cmd.Flags().Lookup("rulesfiles-dir")
 			if f == nil {
 				// should never happen
 				o.Printer.CheckErr(fmt.Errorf("unable to retrieve flag rulesfiles-dir"))
-			} else if !f.Changed && viper.IsSet(config.ArtifactInstallRulesfilesDirKey) {
-				val := viper.Get(config.ArtifactInstallRulesfilesDirKey)
-				if err := cmd.Flags().Set(f.Name, fmt.Sprintf("%v", val)); err != nil {
-					o.Printer.CheckErr(fmt.Errorf("unable to overwrite \"rulesfiles-dir\" flag: %w", err))
-				}
 			}
+			err := viper.BindPFlag(config.ArtifactInstallRulesfilesDirKey, f)
+			o.Printer.CheckErr(err)
+
 			// Check if directory exists and is writable
-			if err := utils.ExistsAndIsWritable(f.Value.String()); err != nil {
+			if err := utils.ExistsAndIsWritable(viper.GetString(config.ArtifactInstallRulesfilesDirKey)); err != nil {
 				o.Printer.CheckErr(fmt.Errorf("rulesfiles-dir: %w", err))
 			}
 
@@ -109,14 +107,12 @@ func NewArtifactInstallCmd(ctx context.Context, opt *options.CommonOptions) *cob
 			if f == nil {
 				// should never happen
 				o.Printer.CheckErr(fmt.Errorf("unable to retrieve flag plugins-dir"))
-			} else if !f.Changed && viper.IsSet(config.ArtifactInstallPluginsDirKey) {
-				val := viper.Get(config.ArtifactInstallPluginsDirKey)
-				if err := cmd.Flags().Set(f.Name, fmt.Sprintf("%v", val)); err != nil {
-					o.Printer.CheckErr(fmt.Errorf("unable to overwrite \"plugins-dir\" flag: %w", err))
-				}
 			}
+			err = viper.BindPFlag(config.ArtifactInstallPluginsDirKey, f)
+			o.Printer.CheckErr(err)
+
 			// Check if directory exists and is writable
-			if err := utils.ExistsAndIsWritable(f.Value.String()); err != nil {
+			if err := utils.ExistsAndIsWritable(viper.GetString(config.ArtifactInstallPluginsDirKey)); err != nil {
 				o.Printer.CheckErr(fmt.Errorf("plugins-dir: %w", err))
 			}
 
@@ -152,9 +148,9 @@ func NewArtifactInstallCmd(ctx context.Context, opt *options.CommonOptions) *cob
 	}
 
 	o.RegistryOptions.AddFlags(cmd)
-	cmd.Flags().StringVarP(&o.rulesfilesDir, "rulesfiles-dir", "", config.RulesfilesDir,
+	cmd.Flags().String("rulesfiles-dir", config.RulesfilesDir,
 		"directory where to install rules. Defaults to /etc/falco")
-	cmd.Flags().StringVarP(&o.pluginsDir, "plugins-dir", "", config.PluginsDir,
+	cmd.Flags().String("plugins-dir", config.PluginsDir,
 		"directory where to install plugins. Defaults to /usr/share/falco/plugins")
 	cmd.Flags().Var(&o.allowedTypes, "allowed-types",
 		`list of artifact types that can be installed. If not specified or configured, all types are allowed.
@@ -287,9 +283,9 @@ func (o *artifactInstallOptions) RunArtifactInstall(ctx context.Context, args []
 		var destDir string
 		switch result.Type {
 		case oci.Plugin:
-			destDir = o.pluginsDir
+			destDir = viper.GetString(config.ArtifactInstallPluginsDirKey)
 		case oci.Rulesfile:
-			destDir = o.rulesfilesDir
+			destDir = viper.GetString(config.ArtifactInstallRulesfilesDirKey)
 		}
 
 		sp, _ := o.Printer.Spinner.Start(fmt.Sprintf("INFO: Extracting and installing %q %q", result.Type, result.Filename))
