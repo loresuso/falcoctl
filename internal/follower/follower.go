@@ -35,6 +35,7 @@ import (
 	"github.com/falcosecurity/falcoctl/internal/utils"
 	"github.com/falcosecurity/falcoctl/pkg/oci"
 	ocipuller "github.com/falcosecurity/falcoctl/pkg/oci/puller"
+	"github.com/falcosecurity/falcoctl/pkg/oci/repository"
 	"github.com/falcosecurity/falcoctl/pkg/output"
 )
 
@@ -46,7 +47,9 @@ type Follower struct {
 	tag           string
 	tmpDir        string
 	currentDigest string
+	currentTags   int
 	*ocipuller.Puller
+	*repository.Repository
 	*Config
 	*output.Printer
 	config.FalcoVersions
@@ -106,6 +109,11 @@ func New(ctx context.Context, ref string, printer *output.Printer, config *Confi
 		return nil, err
 	}
 
+	repo, err := repository.NewRepository(ref, repository.WithClient(client), repository.WithPlainHTTP(config.PlainHTTP))
+	if err != nil {
+		return nil, err
+	}
+
 	// Create temp dir where to put pulled artifacts.
 	tmpDir, err := os.MkdirTemp(config.TmpDir, "falcoctl-")
 	if err != nil {
@@ -119,6 +127,7 @@ func New(ctx context.Context, ref string, printer *output.Printer, config *Confi
 		tag:           tag,
 		tmpDir:        tmpDir,
 		Puller:        puller,
+		Repository:    repo,
 		Config:        config,
 		Printer:       customPrinter,
 		FalcoVersions: config.FalcoVersions,
@@ -148,7 +157,17 @@ func (f *Follower) Follow(ctx context.Context) {
 }
 
 func (f *Follower) follow(ctx context.Context) {
-	// First thing get the descriptor from remote repo.
+	// Check if there are new tags from last time we checked.
+	// If no new tags are presente in the remote repository, nothing has to be done.
+	f.Verbosef("checking for new tags from remote repository...")
+	tags, err := f.Repository.Tags(ctx)
+	if f.currentTags == len(tags) {
+		f.Verbosef("no new tag published in remote repository, nothing to be done")
+		return
+	}
+	f.currentTags = len(tags)
+
+	// Get the descriptor from remote repo.
 	f.Verbosef("fetching descriptor from remote repository...")
 	desc, err := f.Descriptor(ctx, f.ref)
 	if err != nil {
